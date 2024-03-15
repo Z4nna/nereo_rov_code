@@ -1,0 +1,2 @@
+string peripheral_name
+string peripheral_status
