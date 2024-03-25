@@ -24,6 +24,7 @@ setup(
         'console_scripts': [
             "camera1_pub = nereo_pkg.camera1_pub:main",
             "control_station = nereo_pkg.gui:main",
+            "imu = nereo_pkg.IMU:main"
         ],
     },
 )

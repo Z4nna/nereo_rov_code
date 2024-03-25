@@ -28,16 +28,22 @@ class CameraNode(Node):
         self.camera = cv2.VideoCapture(0)  #('/home/ubuntu/Videos/video.mp4')
         self.publisher = self.create_publisher(sensor_msgs.msg.Image, '/camera1', 5)
         self.get_logger().info('Camera node running')
+        self.send_frame
         self.bridge = CvBridge()
         ## sets a timer with the requested fps
-        self.create_timer(int(1000/self.get_parameter('fps')), self.send_frame)
+        self.create_timer(int(1000/self.get_parameter('fps')._value), self.send_frame)
     
     def send_frame(self):
         if not self.camera.isOpened(): return
         ret, frame = self.camera.read()
         if not ret: return
         ## eventually flips the image, as requested by the parameters
-        flip_horizontal, flip_vertical = self.get_parameters(['flip_horizontal', 'flip_vertical'])
+        flip_horizontal = self.get_parameter('flip_horizontal')._value
+        flip_vertical = self.get_parameter('flip_vertical')._value
+
+        # Check data types
+        self.get_logger().info(f'Type of flipH: {type(flip_horizontal)}\nType of flipV: {type(flip_vertical)}\n')
+
         if flip_horizontal and flip_vertical:
             frame = cv2.flip(frame, -1)
         elif flip_horizontal:
@@ -45,6 +51,9 @@ class CameraNode(Node):
         elif flip_vertical:
             frame = cv2.flip(frame, 0)
 
-        frame = cv2.resize(frame, self.get_parameter('size'), interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(frame, self.get_parameter('size')._value, interpolation=cv2.INTER_AREA)
         msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
         self.publisher.publish(msg)
+
+if __name__ == "__main__":
+    main()
