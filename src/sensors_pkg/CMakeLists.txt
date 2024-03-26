@@ -13,9 +13,11 @@ find_package(nereo_interfaces REQUIRED)
 include_directories(
   include "${CMAKE_CURRENT_SOURCE_DIR}/lib/imu_data"
   include "${CMAKE_CURRENT_SOURCE_DIR}/lib/wit_lib"
+  # Include all the libraries
 )
 
 add_executable(imu src/imuPub.cpp)
+add_executable(barometer src/barPub.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

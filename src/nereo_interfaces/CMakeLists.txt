@@ -18,6 +18,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ChangePIConstants.srv"
   "srv/StartROV.srv"
   "srv/ResetIMUCalibration.srv"
+  "msg/ImuData.msg"
  )
 
 if(BUILD_TESTING)

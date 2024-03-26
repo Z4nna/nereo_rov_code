@@ -12,6 +12,10 @@
 #define I2C_ADDR 0x18 // I2C slave address of the barometer sensor
 #define I2C_BUS 1 // I2C bus number (usually 1 or 0)
 
+# define ERROR_VAL -10000000000
+
+int toPublish = 1;
+
 typedef enum {Temp, Press} sensorBool;
 
 using namespace std::chrono_literals;
@@ -41,7 +45,7 @@ float dataToFloat(uint8_t *buffer, sensorBool command){
     case Press:
         return ((buffer[2] << 8) | buffer[3]) * 0.01;
     default:
-        return -INT8_MAX; //In case of an error, I'll return -inf to easily spot it
+        return ERROR_VAL; //In case of an error, I'll return -inf to easily spot it
     }
 }
 
@@ -82,6 +86,28 @@ class PublisherBAR: public rclcpp::Node
             // Getting data from Barometer
             data = read_data();
 
+            // I use this flag to spot errors while getting data, in order to avoid them from being published
+            toPublish = 1;
+
+            if (data.temperature == ERROR_VAL){
+                RCLCPP_ERROR(this->get_logger(), "Error while getting TEMPERATURE data");
+                toPublish = 0;
+            }
+            if (data.pressure == ERROR_VAL){
+                RCLCPP_ERROR(this->get_logger(), "Error while getting PRESSURE data");
+                toPublish = 0;
+            }
+
+            // ADD HERE THE TIME COLLECTION
+
+            if (toPublish){
+                data.isValid = 1;
+                publisher_->publish(data);
+            }
+            else{
+                data.isValid = 0;
+                publisher_->publish()
+            }
         }
 
     public:
@@ -92,7 +118,6 @@ class PublisherBAR: public rclcpp::Node
             
             // Barometer init
             ms5837_t BARsensor = { 0 };
-
 
         }
 }
@@ -112,7 +137,7 @@ int main(int argc, char const *argv[])
 
 //========================================================================================================
 
-/* Class to implement in nereo_interfaces (type of the message to publish)
+/* Class implemented in nereo_interfaces (type of the message to publish)
 class BarData
 {
     private:
@@ -126,5 +151,6 @@ class BarData
         float depth;
         float pressure;
         float temperature;
+        int isValid;     // I use this to get aware of possible errors in data collection
 }
 */

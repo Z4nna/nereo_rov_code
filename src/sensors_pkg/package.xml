@@ -13,6 +13,14 @@
   <depend>std_msgs</depend>
   <depend>wit_lib</depend>
   <depend>tutorial_interfaces</depend>
+  <depend>i2c</depend>
+  <depend>rclcpp</depend>
+  <depend>stdbool</depend>
+  <depend>stdint</depend>
+  <depend>string</depend>
+  <depend>chrono</depend>
+  <depend>memory</depend>
+  <depend>ms5837</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
