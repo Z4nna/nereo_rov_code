@@ -11,6 +11,7 @@
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>wit_lib</depend>
   <depend>tutorial_interfaces</depend>
   <depend>i2c</depend>
@@ -24,6 +25,10 @@
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
 
   <export>
     <build_type>ament_cmake</build_type>

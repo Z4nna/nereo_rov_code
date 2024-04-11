@@ -1,7 +1,3 @@
-int date
-int time
-uint8_t command
-float depth
-float pressure
-float temperature
-int isValid
+sensor_msgs/Temperature temperature
+sensor_msgs/FluidPressure pressure
+sensor_msgs/TimeReference time

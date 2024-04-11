@@ -8,7 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "REG.h"
+#include "../REG/REG.h"
 
 #define WT61P_ADDRESS 0x50 // I2C address found with I2CScanner by Luis
 

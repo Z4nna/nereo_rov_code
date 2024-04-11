@@ -3,121 +3,116 @@
 #include <string>
 #include <stdint.h>
 #include <stdbool.h>
-#include <i2c.h>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "../../nereo_interfaces/msg/BarData.hpp" // Not existing file. Write it before sending
-#include "../lib/MS5837/ms5837.h"
-
-#define I2C_ADDR 0x18 // I2C slave address of the barometer sensor
-#define I2C_BUS 1 // I2C bus number (usually 1 or 0)
-
-# define ERROR_VAL -10000000000
-
-int toPublish = 1;
-
-typedef enum {Temp, Press} sensorBool;
+#include "sensor_msgs/msg/temperature.hpp"
+#include "sensor_msgs/msg/fluid_pressure.hpp"
+#include "diagnostic_msgs/msg/diagnostic_array.hpp"
+#include <diagnostic_updater/diagnostic_updater.hpp>
+#include <Wire.h>
+#include "lib/MS5837/ms5837.h"
 
 using namespace std::chrono_literals;
 
-// USER-DEFINED STRUCT
 
-typedef struct {
-    float temperature;
-    float pressure;
-} barometer_data;
+// Barometer init
+ms5837_t BARsensor = { 0 }; // I put this here because it seemed not visible for timer_callback when declared into public
 
-//=================================================================================================
-
-// USER-DEFINED FUNCTIONS
-
-void init_i2c(void){
-    i2c_init();
-    i2c_set_slave_address(I2C_ADDR);
-}
-
-float dataToFloat(uint8_t *buffer, sensorBool command){
-    switch (command)
-    {
-    case Temp:
-        return ((buffer[0] << 8) | buffer[1]) * 0.01;
-        break;
-    case Press:
-        return ((buffer[2] << 8) | buffer[3]) * 0.01;
-    default:
-        return ERROR_VAL; //In case of an error, I'll return -inf to easily spot it
-    }
-}
-
-barometer_data read_data(void){
-    barometer_data data;
-    uint8_t buffer[2]; // Store data from the sensor
-
-    i2c_write(0x01, 0x00, 0x00, 0x00, 0x00); // Temperature
-
-    i2c_write(0x02, 0x00, 0x00, 0x00, 0x00); // Pressure
-
-    i2c_read(0x01, buffer, 2); // Read Temperature
-
-    i2c_read(0x02, buffer, 2); // Read Pressure
-
-    data.temperature = dataToFloat(&buffer, Temp);
-    data.pressure = dataToFloat(&buffer, Press);
-
-    return data;
-}
-
-//===========================================================================================================
 
 // NODE CLASS
-
 class PublisherBAR: public rclcpp::Node
 {
     private:
-        size_t count_;
-        rclcpp::Publisher<nereo_interfaces::msg::BarData>::SharedPtr publisher_;
+        rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr tempPublisher_;
+        rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressPublisher_;
         rclcpp::TimerBase::SharedPtr timer_;
+
+        rclcpp::TimerBase::SharedPtr diagnostics_timer_;
+        diagnostic_updater::Updater diagnostic_updater_; // Diagnostics updater object
+
+        void checkBarometerStatus(diagnostic_updater::DiagnosticStatusWrapper &stat){
+        if (/* FUNZIONE DI VERIFICA */){
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Barometer is functioning normally");
+        }
+        else{
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Barometer is not responding");
+        }
+
+        // You can add additional diagnostic information here
+        stat.add("Temperature", std::to_string(ms5837_temperature_celsius(&BARsensor)) + " C");
+        stat.add("Pressure", std::to_string(ms5837_pressure_pascal(&BARsensor)) + " Pa");
+        }
+
+        void updateDiagnostics(){
+            diagnostics_updater.force_update();
+        }
 
         void timer_callback()
         {
-            barometer_data data;
-            auto message = nereo_interfaces::msg::BarData();
+            uint16_t wait_us = 0;
 
-            // Getting data from Barometer
-            data = read_data();
+            auto messageTemp = sensor_msgs::msg::Temperature();
+            auto messagePress = sensor_msgs::msg::FluidPressure();
 
-            // I use this flag to spot errors while getting data, in order to avoid them from being published
-            toPublish = 1;
+            // This function will return a microsecond duration when we can safely attempt to read the value
+            wait_us = ms5837_start_conversion(&BARsensor, SENSOR_PRESSURE, OSR_8192); // Pressure reading
+            delayMicroseconds(wait_us);
+            ms5837_read_conversion(&BARsensor);
 
-            if (data.temperature == ERROR_VAL){
-                RCLCPP_ERROR(this->get_logger(), "Error while getting TEMPERATURE data");
-                toPublish = 0;
-            }
-            if (data.pressure == ERROR_VAL){
-                RCLCPP_ERROR(this->get_logger(), "Error while getting PRESSURE data");
-                toPublish = 0;
-            }
+            wait_us = ms5837_start_conversion(&BARsensor, SENSOR_TEMPERATURE, OSR_8192); // Temperature reading
+            delayMicroseconds(wait_us);
+            ms5837_read_conversion(&BARsensor);
 
-            // ADD HERE THE TIME COLLECTION
+            ms5837_calculate(&BARsensor); // Once collected data it will convert them
 
-            if (toPublish){
-                data.isValid = 1;
-                publisher_->publish(data);
-            }
-            else{
-                data.isValid = 0;
-                publisher_->publish()
-            }
+            // TEMPERATURE
+            messageTemp.data.temperature = ms5837_temperature_celsius(&BARsensor);
+            messageTemp.data.variance = 0; // 0: Unknown variance
+            messageTemp.data.header.stamp = self.get_clock().now().seconds; // Time data type from builtin_interfaces (???)
+            messageTemp.data.header.frame_id = "Frame ID Barometer"
+
+            // PRESSURE
+            messagePress.data.fluid_pressure = ms5837_pressure_pascal(&BARsensor)
+            messagePress.data.variance = 0; // 0: Unknown variance
+            messagePress.data.header.stamp = self.get_clock().now().seconds;
+            messagePress.data.header.frame_id = //.... (Stringa)
+
+            updateDiagnostics();
+
+            // PUBLISHING
+            tempPublisher_->publish(messageTemp);
+            pressPublisher_->publish(messagePress);
         }
 
     public:
-        PublisherBAR(): Node("bar_publisher"), count_()
+        PublisherBAR(): Node("bar_publisher"), diagnostic_updater_(this)
         {
-            publisher_ = this->create_publisher<nereo_interfaces::msg::BarData>("bar_topic", 10);
-            timer_ = this->create_wall_timer(200ms, std::bind(&PublisherBAR::timer_callback, this));
-            
-            // Barometer init
-            ms5837_t BARsensor = { 0 };
+            tempPublisher_ = this->create_publisher<sensor_msgs::msg::BarData>("barTemp_topic", 10);
+            pressPublisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("barPress_topic", 10);
+            statusPublisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticStatus>("barStatus_topic", 10);
+
+            timer_ = this->create_wall_timer(300ms, std::bind(&PublisherBAR::timer_callback, this));
+
+            Wire.begin();
+
+            ms5837_i2c_set_read_fn(&BARsensor, i2c_read);
+            ms5837_i2c_set_write_fn(&BARsensor, i2c_write);
+
+            ms5837_reset(&BARsensor);
+
+            delay(20);  // It is necessary to give the barometer time to finish the initialization
+
+            ms5837_read_calibration_data(&BARsensor);
+
+            // DIAGNOSTIC
+            diagnostic_updater_.setHardwareID("BarometerSensor"); // Hardware ID
+            diagnostic_updater_.add("Barometer Status", this, &PublisherBAR::checkBarometerStatus);
+            diagnostic_timer_ = this->create_wall_timer(1000ms, std::bind(&PublisherBAR::updateDiagnostic, this));
+
+            if(sensor.calibration_loaded)
+                RCLCPP_INFO(this->get_logger("Calibration OK"));
+            else
+                RCLCPP_ERROR(this->get_logger("Calibration failed!"));
 
         }
 }
@@ -128,29 +123,8 @@ class PublisherBAR: public rclcpp::Node
 
 int main(int argc, char const *argv[])
 {
-
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<PublisherBAR>());
     rclcpp::shutdown();
     return 0;
 }
-
-//========================================================================================================
-
-/* Class implemented in nereo_interfaces (type of the message to publish)
-class BarData
-{
-    private:
-        int year;
-        int month;
-        int day;
-        int hours;
-        int minutes;
-        int seconds;
-        uint8_t command;
-        float depth;
-        float pressure;
-        float temperature;
-        int isValid;     // I use this to get aware of possible errors in data collection
-}
-*/

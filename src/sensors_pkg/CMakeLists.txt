@@ -9,9 +9,9 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(nereo_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 include_directories(
-  include "${CMAKE_CURRENT_SOURCE_DIR}/lib/imu_data"
   include "${CMAKE_CURRENT_SOURCE_DIR}/lib/wit_lib"
   # Include all the libraries
 )

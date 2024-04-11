@@ -2,45 +2,91 @@
 #include <memory>
 #include <string>
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
 #include "../lib/wit_lib/wit_lib.h"
-#include "../../nereo_interfaces/msg/ImuData.hpp" // To fix
+#include "sensor_msgs/msg/imu.hpp"
+#include "diagnostic_msgs/msg/diagnostic_array.hpp"
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
 
 using namespace std::chrono_literals;
+
+// Struct di appoggio
+typedef struct {
+    uint16_t Acc[3];
+    uint16_t Angle[3];
+    uint16_t AngVel[3];
+    uint16_t Temp;
+} imuValues;
 
 class PublisherIMU: public rclcpp::Node
 {
     private:
-        size_t count_;
-        rclcpp::Publisher<nereo_interfaces::msg::ImuData>::SharedPtr publisher_;
+        rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr dataIMUpublisher_;
         rclcpp::TimerBase::SharedPtr timer_;
+        rclcpp::TimerBase::SharedPtr diagnostic_timer_;
+        diagnostic_updater::Updater diagnostic_updater_;
+
+        // Status indicators
+        bool imu_acc_error = false;
+        bool imu_angle_error = false;
+        bool imu_ang_vel_error = false;
 
         void timer_callback()
         {
-            auto message = nereo_interfaces::msg::ImuData();
-            
-            // Getting data from IMU
-            if (!GetAcc(message.data.Acc))
-                RCLCPP_ERROR(this->get_logger(), "Error while getting ACCELERATION data");
-            
-            if (!GetAngle(message.data.Angle))
-                RCLCPP_ERROR(this->get_logger(), "Error while getting ANGLE data");
+            imuValues imu;
+            auto dataIMUmessage = sensor_msgs::msg::Imu();
 
-            if (!GetAngVel(message.data.AngVel))
-                RCLCPP_ERROR(this->get_logger(), "Error while getting ANGULAR VELOCITY data");
+            imu_acc_error = getAcc(imu.Acc);
+            imu_ang_vel_error = getAngVel(imu.AngVel);
+            imu_angle_error = getAngle(imu.Angle);
 
-            if (!GetTEMP(message.data.Temp))
-                RCLCPP_ERROR(this->get_logger(), "Error while getting TEMPERATURE data");
+            dataIMUmessage.data.header.stamp = self.get_clock().now().seconds;
+            dataIMUmessage.data.header.frame_id = "Frame ID IMU";
+
+            for (int i = 0; i < 3; i++){
+                dataIMUmessage.data.angular_velocity[i] = imu.AngVel[i];
+                dataIMUmessage.data.linear_acceleration[i] = imu.Acc[i];
+                dataIMUmessage.data.orientation[i] = imu.Angle[i];
+            }
+
+            // Linear acceleration covariance
+            // Angular velocity covariance
+            // Orientation covariance
+
+            // Publish ...
+        }
+
+        void diagnostic_check(diagnostic_updater::DiagnosticStatusWrapper& stat) {
+            if (!imu_acc_error && !imu_angle_error && !imu_ang_vel_error)
+                stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "IMU functioning normally");
+            else {
+                stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "IMU encountered errors");
+
+                if (imu_acc_error)
+                    stat.add("Acceleration Error", "Error while getting ACCELERATION (IMU)");
+                
+                if (imu_angle_error)
+                    stat.add("Angle Error", "Error while getting ANGLE data");
+                
+                if (imu_ang_vel_error)
+                    stat.add("Angular Velocity Error", "Error while getting ANGULAR VELOCITY data");
+            }
         }
 
     public:
-        PublisherIMU(): Node("imu_publisher"), count_()
+        PublisherIMU(): Node("imu_publisher"), diagnostic_updater_(this)
         {
-            publisher_ = this->create_publisher<nereo_interfaces::msg::ImuData>("imu_topic", 10);
+            dataIMUpublisher_ = this->create_publisher<sensor_msgs::msg::Imu>("dataIMU_topic", 10);
             timer_ = this->create_wall_timer(200ms, std::bind(&publisherIMU::timer_callback, this));
+
             WitInit();
-        }
-};
+
+            diagnostic_updater_.setHardwareID("IMU_Sensor");
+            diagnostic_updater_.add("IMU Status", this, &PublisherIMU::diagnostic_check);
+
+            auto diagnostic_timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
+        };
+}
 
 int main(int argc, char const *argv[])
 {
