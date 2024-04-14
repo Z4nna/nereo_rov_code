@@ -7,7 +7,8 @@
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/temperature.hpp"
 #include "sensor_msgs/msg/fluid_pressure.hpp"
-#include "diagnostic_array.hpp"
+#include "diagnostic_msgs/msg/diagnostic_array.hpp"
+#include <diagnostic_updater/diagnostic_updater.hpp>
 #include <Wire.h>
 #include "lib/MS5837/ms5837.h"
 
@@ -24,7 +25,25 @@ class PublisherBAR: public rclcpp::Node
         rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressPublisher_;
         rclcpp::TimerBase::SharedPtr timer_;
 
-        rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnosticPublisher_;
+        rclcpp::TimerBase::SharedPtr diagnostics_timer_;
+        diagnostic_updater::Updater diagnostic_updater_; // Diagnostics updater object
+
+        void checkBarometerStatus(diagnostic_updater::DiagnosticStatusWrapper &stat){
+        if (/* FUNZIONE DI VERIFICA */){
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Barometer is functioning normally");
+        }
+        else{
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Barometer is not responding");
+        }
+
+        // You can add additional diagnostic information here
+        stat.add("Temperature", std::to_string(ms5837_temperature_celsius(&BARsensor)) + " C");
+        stat.add("Pressure", std::to_string(ms5837_pressure_pascal(&BARsensor)) + " Pa");
+        }
+
+        void updateDiagnostics(){
+            diagnostics_updater.force_update();
+        }
 
         void timer_callback()
         {
@@ -56,24 +75,19 @@ class PublisherBAR: public rclcpp::Node
             messagePress.data.header.stamp = self.get_clock().now().seconds;
             messagePress.data.header.frame_id = "Frame ID Barometer - Pressure"
 
-            // DIAGNOSTIC
-            auto diagnosticMessage = diagnostic_msgs::msg::DiagnosticArray();
-
-            diagnosticMessage.header.stamp = this->get_clock()->now();
-            diagnosticMessage.header.frame_id = "Barometer Diagnostic";
+            updateDiagnostics();
 
             // PUBLISHING
             tempPublisher_->publish(messageTemp);
             pressPublisher_->publish(messagePress);
-            diagnosticPublisher_->publish(diagnosticMessage);
         }
 
     public:
-        PublisherBAR(): Node("bar_publisher")
+        PublisherBAR(): Node("bar_publisher"), diagnostic_updater_(this)
         {
             tempPublisher_ = this->create_publisher<sensor_msgs::msg::BarData>("barTemp_topic", 10);
             pressPublisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("barPress_topic", 10);
-            diagnosticPublisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnosticBAR_topic", 10);
+            statusPublisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticStatus>("barStatus_topic", 10);
 
             timer_ = this->create_wall_timer(300ms, std::bind(&PublisherBAR::timer_callback, this));
 
@@ -87,6 +101,17 @@ class PublisherBAR: public rclcpp::Node
             delay(20);  // It is necessary to give the barometer time to finish the initialization
 
             ms5837_read_calibration_data(&BARsensor);
+
+            // DIAGNOSTIC
+            diagnostic_updater_.setHardwareID("BarometerSensor"); // Hardware ID
+            diagnostic_updater_.add("Barometer Status", this, &PublisherBAR::checkBarometerStatus);
+            diagnostic_timer_ = this->create_wall_timer(1000ms, std::bind(&PublisherBAR::updateDiagnostic, this));
+
+            if(sensor.calibration_loaded)
+                RCLCPP_INFO(this->get_logger("Calibration OK"));
+            else
+                RCLCPP_ERROR(this->get_logger("Calibration failed!"));
+
         }
 }
 

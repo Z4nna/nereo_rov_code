@@ -1,38 +1,112 @@
 #include <chrono>
+#include <iostream>
 #include <memory>
+#include <queue>
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "../lib/wit_lib/wit_lib.h"
 #include "sensor_msgs/msg/imu.hpp"
-#include "diagnostic_msgs/msg/diagnostic_array.hpp"
-#include <diagnostic_msgs/msg/diagnostic_status.hpp>
-#include <diagnostic_updater/diagnostic_updater.hpp>
+#include "diagnostic_array.hpp"
+
+#define MAXN 20
 
 using namespace std::chrono_literals;
 
-// Struct di appoggio
 typedef struct {
-    uint16_t Acc[3];
-    uint16_t Angle[3];
-    uint16_t AngVel[3];
-    uint16_t Temp;
+    float Acc[3];
+    float Angle[3];
+    float AngVel[3];
 } imuValues;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+} vec3;
+
+typedef double float64;
+
+enum status {DEBUG, INFO, WARN, ERROR, FATAL};
+
+void calcCovMatrix(std::queue<vec3> window, float64 *matrix){
+
+    std::queue<vec3> copy = window;
+
+    vec3 mean;
+    vec3 sum = {0, 0, 0};
+
+    while(!copy.empty()){
+        sum.x += copy.front().x;
+        sum.y += copy.front().y;
+        sum.z += copy.front().z;
+
+        copy.pop();
+    }
+
+    mean.x = sum.x / MAXN;
+    mean.y = sum.y / MAXN;
+    mean.z = sum.z / MAXN;
+
+    copy = window;
+
+    sum = {0, 0, 0};
+
+    // VARIANCE
+    while (!copy.empty()){
+        sum.x += (copy.front().x - mean.x)*(copy.front().x - mean.x);
+        sum.y += (copy.front().y - mean.y)*(copy.front().y - mean.y);
+        sum.z += (copy.front().z - mean.z)*(copy.front().z - mean.z);
+
+        copy.pop();
+    }
+
+    matrix[0] = sum.x / MAXN;
+    matrix[4] = sum.y / MAXN;
+    matrix[8] = sum.z / MAXN;
+
+    
+    sum = {0, 0, 0};
+
+    // COVARIANCE
+    while(!copy.empty()){
+        sum.x += (copy.front().x - mean.x)*(copy.front().y - mean.y);
+        sum.y += (copy.front().x - mean.x)*(copy.front().z - mean.z);
+        sum.z += (copy.front().y - mean.y)*(copy.front().z - mean.z);
+
+    }
+
+    matrix[1] = sum.x / MAXN; matrix[3] = sum.x / MAXN;
+    matrix[2] = sum.y / MAXN; matrix[6] = sum.y / MAXN;
+    matrix[5] = sum.z / MAXN; matrix[7] = sum.z / MAXN;
+}
 
 class PublisherIMU: public rclcpp::Node
 {
     private:
         rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr dataIMUpublisher_;
         rclcpp::TimerBase::SharedPtr timer_;
-        rclcpp::TimerBase::SharedPtr diagnostic_timer_;
-        diagnostic_updater::Updater diagnostic_updater_;
+        
+        rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnosticPublisher_;
 
         // Status indicators
         bool imu_acc_error = false;
         bool imu_angle_error = false;
         bool imu_ang_vel_error = false;
 
+        status communicationState = INFO;
+
+        std::queue<vec3> dataWindowAcc;
+        std::queue<vec3> dataWindowAngVel;
+        std::queue<vec3> dataWindowAngle;
+
+        vec3 Arr;
+
+        float64 matrix[9];
+
         void timer_callback()
         {
+
+            // IMU Data
             imuValues imu;
             auto dataIMUmessage = sensor_msgs::msg::Imu();
 
@@ -40,53 +114,63 @@ class PublisherIMU: public rclcpp::Node
             imu_ang_vel_error = getAngVel(imu.AngVel);
             imu_angle_error = getAngle(imu.Angle);
 
-            dataIMUmessage.data.header.stamp = self.get_clock().now().seconds;
-            dataIMUmessage.data.header.frame_id = "Frame ID IMU";
+            dataIMUmessage.header.stamp = this->get_clock()->now();
+            dataIMUmessage.header.frame_id = "IMU Data";
+            
+            dataIMUmessage.angular_velocity.x = imu.AngVel[0];
+            dataIMUmessage.angular_velocity.y = imu.AngVel[1];
+            dataIMUmessage.angular_velocity.z = imu.AngVel[2];
+            
+            dataIMUmessage.linear_acceleration.x = imu.Acc[0];
+            dataIMUmessage.linear_acceleration.y = imu.Acc[1];
+            dataIMUmessage.linear_acceleration.z = imu.Acc[2];
 
-            for (int i = 0; i < 3; i++){
-                dataIMUmessage.data.angular_velocity[i] = imu.AngVel[i];
-                dataIMUmessage.data.linear_acceleration[i] = imu.Acc[i];
-                dataIMUmessage.data.orientation[i] = imu.Angle[i];
-            }
+            dataIMUmessage.orientation.x = imu.Angle[0];
+            dataIMUmessage.orientation.y = imu.Angle[1];
+            dataIMUmessage.orientation.z = imu.Angle[2];
+
+            // Capire cosa mettere nella quarta componente del quaternione
 
             // Linear acceleration covariance
+            calcCovMatrix(dataWindowAcc, matrix);
+
+            for (int i = 0; i < 9; i++)
+                dataIMUmessage.linear_acceleration_covariance[i] = matrix[i];
+
             // Angular velocity covariance
+            calcCovMatrix(dataWindowAngVel, matrix);
+
+            for (int i = 0; i < 9; i++)
+                dataIMUmessage.angular_velocity_covariance[i] = matrix[i];
+
             // Orientation covariance
+            calcCovMatrix(dataWindowAngle, matrix);
+            
+            for (int i = 0; i < 9; i++)
+                dataIMUmessage.orientation_covariance[i] = matrix[i];
 
-            // Publish ...
-        }
+            // Diagnostic
+            auto diagnosticMessage = diagnostic_msgs::msg::DiagnosticArray();
+            
+            diagnosticMessage.header.stamp = this->get_clock()->now();
+            diagnosticMessage.header.frame_id = "IMU Diagnostic";
 
-        void diagnostic_check(diagnostic_updater::DiagnosticStatusWrapper& stat) {
-            if (!imu_acc_error && !imu_angle_error && !imu_ang_vel_error)
-                stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "IMU functioning normally");
-            else {
-                stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "IMU encountered errors");
 
-                if (imu_acc_error)
-                    stat.add("Acceleration Error", "Error while getting ACCELERATION (IMU)");
-                
-                if (imu_angle_error)
-                    stat.add("Angle Error", "Error while getting ANGLE data");
-                
-                if (imu_ang_vel_error)
-                    stat.add("Angular Velocity Error", "Error while getting ANGULAR VELOCITY data");
-            }
+            dataIMUpublisher_->publish(dataIMUmessage);
+            diagnosticPublisher_->publish(diagnosticMessage);
         }
 
     public:
-        PublisherIMU(): Node("imu_publisher"), diagnostic_updater_(this)
-        {
+        PublisherIMU(): Node("imu_publisher")
+        {            
             dataIMUpublisher_ = this->create_publisher<sensor_msgs::msg::Imu>("dataIMU_topic", 10);
-            timer_ = this->create_wall_timer(200ms, std::bind(&publisherIMU::timer_callback, this));
+            diagnosticPublisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnosticIMU_topic", 10);
+
+            timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
 
             WitInit();
-
-            diagnostic_updater_.setHardwareID("IMU_Sensor");
-            diagnostic_updater_.add("IMU Status", this, &PublisherIMU::diagnostic_check);
-
-            auto diagnostic_timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
         };
-}
+};
 
 int main(int argc, char const *argv[])
 {

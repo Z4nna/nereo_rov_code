@@ -22,6 +22,7 @@
   <depend>chrono</depend>
   <depend>memory</depend>
   <depend>ms5837</depend>
+  <depend>queue</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
