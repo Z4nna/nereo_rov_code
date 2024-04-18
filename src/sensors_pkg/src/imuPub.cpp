@@ -110,6 +110,8 @@ class PublisherIMU: public rclcpp::Node
             imuValues imu;
             auto dataIMUmessage = sensor_msgs::msg::Imu();
 
+            // vvv Valgono 0 nel caso di errore di acquisizione vvv
+
             imu_acc_error = getAcc(imu.Acc);
             imu_ang_vel_error = getAngVel(imu.AngVel);
             imu_angle_error = getAngle(imu.Angle);
@@ -143,7 +145,7 @@ class PublisherIMU: public rclcpp::Node
             for (int i = 0; i < 9; i++)
                 dataIMUmessage.angular_velocity_covariance[i] = matrix[i];
 
-            // Orientation covariance
+            // Orientation covariance - SBAGLIATA - CONVERSIONE IN QUATERNIONI E POI MATRICE
             calcCovMatrix(dataWindowAngle, matrix);
             
             for (int i = 0; i < 9; i++)

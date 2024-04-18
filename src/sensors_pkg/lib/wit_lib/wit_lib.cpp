@@ -1,7 +1,14 @@
 #include "wit_lib.h"
-#include <Wire.h>
-#include <Arduino.h>
 
+#include <thread>
+#include <chrono>
+
+
+int fd; // File descriptor for I2C communication
+
+void delayFor(int ms){ // I made this function because I don't want to write std::... every time
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
 
 int32_t WitWriteReg(uint8_t uiReg, uint16_t usData)
 {
@@ -27,55 +34,50 @@ int32_t WitReadReg(uint8_t uiReg, uint8_t uiReadNum, int32_t* data32)
 
     return 1;
 }
+
+// FUNZIONI MODIFICATE PER RASPBERRY PI (wiringPiI2C.h) ==================================
+
 int32_t WitInit()
 {
-  Wire.begin();
-  delay(10);
-  Wire.beginTransmission(WT61P_ADDRESS);
-  Wire.endTransmission();
-  return 0;
+  fd = wiringPiI2CSetup(WT61P_ADDRESS); // WT61P_ADDRESS is slave address
+  if (fd == -1){
+    return -1; // Failed to open I2C device
+  }
+    return 0;
 }
 
 int32_t IICreadBytes(uint8_t dev, uint8_t reg, uint8_t *data, uint32_t length)
 {
-    int val;
-    Wire.beginTransmission(dev);
-    Wire.write(reg);
-    Wire.endTransmission(0); // endTransmission but keep the connection active
-
-    val = Wire.requestFrom(dev, length); // Ask for bytes, once done, bus is released by default
-
-    if (val == 0)
+    if (fd == -1){
         return 0;
-    while (Wire.available() < length) // Hang out until we get the # of bytes we expect
-    {
-        if (Wire.getWireTimeoutFlag())
-        {
-            Wire.clearWireTimeoutFlag();
-            return 0;
-        }
     }
 
-    for (int x = 0; x < length; x++)
-        data[x] = Wire.read();
-
+    for (uint32_t i = 0; i < length; ++i){
+        int byte = wiringPiI2CReadReg8(fd, reg + i);
+        if (byte == -1){
+            return 0;
+        }
+        data[i] = static_cast<uint8_t>(byte);
+    }
     return 1;
 }
 
 int32_t IICwriteBytes(uint8_t dev, uint8_t reg, uint8_t *data, uint32_t length)
 {
-    Wire.beginTransmission(dev);
-    Wire.write(reg);
-    Wire.write(data, length);
-    if (Wire.getWireTimeoutFlag())
-    {
-        Wire.clearWireTimeoutFlag();
+    if (fd == -1){
         return 0;
     }
-    Wire.endTransmission(); // Stop transmitting
 
+    for (uint32_t i = 0; i < length; ++i){
+        int result = wiringPiI2CWriteReg8(fd, reg + i, data[i]);
+        if (result == -1){
+            return 0;
+        }
+    }
     return 1;
 }
+
+//=========================================================================================
 
 int32_t getTEMP(float *T){
     int32_t data32;
@@ -148,7 +150,8 @@ int32_t WitAccCali(void){
     ucBuff[1] = usData >> 8;
     if(!IICwriteBytes(WT61P_ADDRESS, CALSW, ucBuff, 2))
         return 0;
-    delay(5000);
+
+    delayFor(5000);
     usData=NORMAL;
     ucBuff[0] = usData & 0xff;
     ucBuff[1] = usData >> 8;
