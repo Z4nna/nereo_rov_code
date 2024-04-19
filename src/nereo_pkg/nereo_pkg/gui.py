@@ -15,7 +15,8 @@ def main(args = None) -> None:
     rclpy.init(args=args)
 
     app = Control_RPI_GUI()
-    spin_thread = threading.Thread(
+
+    spin_thread = threading.Thread( # Running the rclpy.spin on a separate thread the GUI can remain responsive
         target=rclpy.spin,
         args=(app.camera_frame.camera_1_sub_node,)
     )
@@ -24,17 +25,17 @@ def main(args = None) -> None:
     app.mainloop()
     rclpy.shutdown()
 
-class Control_RPI_GUI(ctk.CTk):
+class Control_RPI_GUI(ctk.CTk): # class that define GUI. CTK is taken from a library that let you build GUIs
     def __init__(self) -> None:
         super().__init__()
         self.title("Nereo control station")
-        self.geometry(f'{self.winfo_screenwidth()}x{self.winfo_screenheight()}')
-        self.minsize(800,600)
-        self.camera_frame = CameraFrame(self)
-        self.control_frame = ControlFrame(self)
-        control_frame_width = 0.2
-        self.camera_frame.place(rely = 0, relx = 0, relwidth = 1-control_frame_width, relheight = 1)
-        self.control_frame.place(rely = 0, relx = 1-control_frame_width, relwidth = control_frame_width, relheight = 1)
+        self.geometry(f'{self.winfo_screenwidth()}x{self.winfo_screenheight()}') # Geometry of the window
+        self.minsize(800,600) # Set size
+        self.camera_frame = CameraFrame(self) # Handle camera view
+        self.control_frame = ControlFrame(self) # Handle control interface
+        control_frame_width = 0.2 # Space occupied by control frame (See below..)
+        self.camera_frame.place(rely = 0, relx = 0, relwidth = 1-control_frame_width, relheight = 1) # Camera frame positioned at the top-left corner
+        self.control_frame.place(rely = 0, relx = 1-control_frame_width, relwidth = control_frame_width, relheight = 1) # Control frame positioned at the top-right corner
 
 class CameraFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -63,20 +64,20 @@ class CameraFrame(ctk.CTkFrame):
     def update_frame_callback(self, msg: sensor_msgs.msg.Image):
         frame = self.camera_1_sub_node.bridge.imgmsg_to_cv2(msg, 'bgr8')
         image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        photo = ctk.CTkImage(dark_image=image, size=self.camera_1_sub_node.get_parameter('size'))
+        photo = ctk.CTkImage(dark_image=image, size=self.camera_1_sub_node.get_parameter('size')._value)
         self.photo_image_1 = photo
 
     def update_image(self):
         if self.photo_image_1:
             self.label_1.configure(image = self.photo_image_1)
             self.label_1._image = self.photo_image_1
-        self.after(int(1000/self.camera_1_sub_node.get_parameter('fps')), self.update_image)
+        self.after(int(1000/self.camera_1_sub_node.get_parameter('fps')._value), self.update_image)
 
 class ControlFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         self.is_rov_running = False
         super().__init__(master, **kwargs, bg_color='black')
-        self.label = ctk.CTkLabel(self, text='Control Frame: furure implementation\n of the controller regulator', fg_color='steelblue', bg_color='steelblue')
+        self.label = ctk.CTkLabel(self, text='Control Frame: furure implementation\n of the controller regulator', fg_color='steelblue', bg_color='steelblue') # CTKLabel displays the camera image
         self.label.pack(fill = tk.BOTH, expand = True, side = tk.BOTTOM)
         # peripheral status panel
         self.peripheral_status_frame = PeripheralStatusFrame(self)
@@ -163,7 +164,3 @@ class CameraSubNode(Node):
 class SensorDataSubNode(Node):
     def __init__(self):
         super().__init__('pitch_and_roll_subscriber')
-
-class PeripheralStatusSubNode(Node):
-    def __init__(self):
-        super().__init__('peripheral_status_subscriber')
