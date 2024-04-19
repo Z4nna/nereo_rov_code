@@ -26,7 +26,7 @@ typedef struct {
 
 typedef double float64;
 
-enum status {DEBUG, INFO, WARN, ERROR, FATAL};
+enum status {OK, WARN, ERROR, STALE};
 
 void calcCovMatrix(std::queue<vec3> window, float64 *matrix){
 
@@ -107,6 +107,7 @@ class PublisherIMU: public rclcpp::Node
         {
 
             // IMU Data
+            int diagnosticSize = 0;
             imuValues imu;
             auto dataIMUmessage = sensor_msgs::msg::Imu();
 
@@ -157,6 +158,38 @@ class PublisherIMU: public rclcpp::Node
             diagnosticMessage.header.stamp = this->get_clock()->now();
             diagnosticMessage.header.frame_id = "IMU Diagnostic";
 
+            // GENERAL ERROR ENCOUTERED
+            if (!imu_acc_error || !imu_ang_vel_error || !imu_angle_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize++].name = "Acquisition error";
+                diagnosticMessage.status[diagnosticSize].message = "Errors encountered while acquiring data from IMU";
+            }
+            else{
+                diagnosticMessage.status[diagnosticSize].level = OK;
+                diagnosticMessage.status[diagnosticSize++].name = "Everything OK";
+                diagnosticMessage.status[diagnosticSize].message = "All data acquired correctly";
+            }
+
+            // ACCELERATION ERROR
+            if (!imu_acc_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize].name = "Acceleration error";
+                diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Acceleration";
+            }
+
+            // ANGULAR VELOCITY ERROR
+            if (!imu_ang_vel_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize].name = "Angular velocity error";
+                diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Angular velocity";
+            }
+
+            // ANGLE ERROR
+            if (!imu_angle_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize].name = "Angle error";
+                diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Angle";
+            }
 
             dataIMUpublisher_->publish(dataIMUmessage);
             diagnosticPublisher_->publish(diagnosticMessage);
@@ -181,3 +214,8 @@ int main(int argc, char const *argv[])
     rclcpp::shutdown();
     return 0;
 }
+
+/*Diagnostic status
+- [0]: General INFO
+- [1 - 3]: Errors encountered (Acc, AngVel, Angle)
+- */

@@ -14,6 +14,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 include_directories(
   include "${CMAKE_CURRENT_SOURCE_DIR}/lib/wit_lib"
+  include "${CMAKE_CURRENT_SOURCE_DIR}/lib/wiringPi"
+  include "${CMAKE_CURRENT_SOURCE_DIR}/lib/MS5837"
   # Include all the libraries
 )
 

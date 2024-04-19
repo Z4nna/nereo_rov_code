@@ -9,6 +9,7 @@
 #include "sensor_msgs/msg/fluid_pressure.hpp"
 #include "diagnostic_array.hpp"
 #include "../lib/MS5837/ms5837.h"
+#include "../lib/wiringPi/wiringPiI2C.h"
 
 using namespace std::chrono_literals;
 
@@ -43,30 +44,35 @@ class PublisherBAR: public rclcpp::Node
 
             uint16_t wait_us = 0;
 
+            int diagnosticSize = 0;
+
             auto messageTemp = sensor_msgs::msg::Temperature();
             auto messagePress = sensor_msgs::msg::FluidPressure();
+
+            int bar_press_error = 0;
+            int bar_temp_error = 0;
 
             // This function will return a microsecond duration when we can safely attempt to read the value
             wait_us = ms5837_start_conversion(&BARsensor, SENSOR_PRESSURE, OSR_8192); // Pressure reading
             delayFor(wait_us);
-            ms5837_read_conversion(&BARsensor);
+            bar_press_error = ms5837_read_conversion(&BARsensor);
 
             wait_us = ms5837_start_conversion(&BARsensor, SENSOR_TEMPERATURE, OSR_8192); // Temperature reading
             delayFor(wait_us);
-            ms5837_read_conversion(&BARsensor);
+            bar_temp_error = ms5837_read_conversion(&BARsensor);
 
             ms5837_calculate(&BARsensor); // Once collected data it will convert them
 
             // TEMPERATURE
             messageTemp.temperature = ms5837_temperature_celcius(&BARsensor);
             messageTemp.variance = 0; // 0: Unknown variance
-            messageTemp.header.stamp = self.get_clock().now().seconds; // Time data type from builtin_interfaces (???)
+            messageTemp.header.stamp = this->get_clock()->now(); // Time data type from builtin_interfaces (???)
             messageTemp.header.frame_id = "Frame ID Barometer - Temperature";
 
             // PRESSURE
             messagePress.fluid_pressure = ms5837_pressure_pascal(&BARsensor);
             messagePress.variance = 0; // 0: Unknown variance
-            messagePress.header.stamp = self.get_clock().now().seconds;
+            messagePress.header.stamp = this->get_clock()->now();
             messagePress.header.frame_id = "Frame ID Barometer - Pressure";
 
             // DIAGNOSTIC
@@ -75,12 +81,31 @@ class PublisherBAR: public rclcpp::Node
             diagnosticMessage.header.stamp = this->get_clock()->now();
             diagnosticMessage.header.frame_id = "Barometer Diagnostic";
 
+            // GENERAL ERROR ENCOUTERED
+            if (!bar_press_error || !bar_temp_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize].name = "Acquisition error";
+                diagnosticMessage.status[diagnosticSize++].message = "Errors encountered while acquiring data from BAROMETER";
+            }
+            else{
+                diagnosticMessage.status[diagnosticSize].level = OK;
+                diagnosticMessage.status[diagnosticSize].name = "Everything OK";
+                diagnosticMessage.status[diagnosticSize++].message = "All data acquired correctly";
+            }
 
-            // Sistemare diagnostic array e dentro diagnostic status
-            diagnosticMessage.status.level = OK;
+            // PRESSURE ERROR
+            if (!bar_press_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize].name = "Pressure error";
+                diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Pressure";
+            }
 
-
-            diagnosticMessage.status.name.data = "Location of the error";
+            // TEMPERATURE ERROR
+            if (!bar_temp_error){
+                diagnosticMessage.status[diagnosticSize].level = ERROR;
+                diagnosticMessage.status[diagnosticSize].name = "Temperature error";
+                diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Temperature";
+            }
 
             // PUBLISHING
             tempPublisher_->publish(messageTemp);
