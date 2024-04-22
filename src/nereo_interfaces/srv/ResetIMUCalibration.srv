@@ -1,5 +1,0 @@
-##
-# resets the IMU calibration, and starts computing Position, Pitch and roll from the current orientation of the ROV.
-# returns the success of the operation.
----
-bool success

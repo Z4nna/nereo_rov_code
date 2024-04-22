@@ -1,9 +1,0 @@
-##
-# changes the proportional and integral constants in the controller.
-# k_p is the new proportional constant,
-# k_i is the new integral constant.
-# It returns the success of the operation.
-float64 k_p
-float64 k_i
----
-bool success

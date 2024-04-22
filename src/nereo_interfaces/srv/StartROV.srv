@@ -1,6 +1,0 @@
-##
-# rov_status is the status to be set to the ROV
-# new_rov_status indicates the status the ROV is after the service has been executed: it indicates eventual fails in the execution
-bool rov_status
----
-bool new_rov_status

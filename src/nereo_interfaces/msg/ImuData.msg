@@ -1,2 +1,0 @@
-sensor_msgs/Imu Imu
-sensor_msgs/Temperature temperature
