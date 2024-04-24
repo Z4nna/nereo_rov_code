@@ -3,6 +3,7 @@
 #include <string>
 #include <stdint.h>
 #include <stdbool.h>
+#include <errno.h>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/temperature.hpp"
@@ -10,6 +11,7 @@
 #include "diagnostic_array.hpp"
 #include "../lib/MS5837/ms5837.h"
 #include "../lib/wiringPi/wiringPiI2C.h"
+#include "semaphore.h"
 
 using namespace std::chrono_literals;
 
@@ -26,6 +28,15 @@ int32_t IICwriteBytes(uint8_t, uint8_t, uint8_t *, uint32_t);
 void delayFor(int);
 
 int fd; // File descriptor for I2C communication
+
+// SEMAPHORE
+sem_t *i2c_sem; // Semaphore variable
+int oflag = o_CREAT; // To create it from zero
+mode_t mode = 0644;
+const char semname[] = "/tmp/i2c1_interface"; // Name of the named semaphore
+unsigned int value = 1; // Value of the semaphore
+int sts; // Number that will be incremented or decremented when lock/unlock
+bool semCreated = false;
 
 // NODE CLASS
 class PublisherBAR: public rclcpp::Node
@@ -52,16 +63,22 @@ class PublisherBAR: public rclcpp::Node
             int bar_press_error = 0;
             int bar_temp_error = 0;
 
-            // This function will return a microsecond duration when we can safely attempt to read the value
-            wait_us = ms5837_start_conversion(&BARsensor, SENSOR_PRESSURE, OSR_8192); // Pressure reading
-            delayFor(wait_us);
-            bar_press_error = ms5837_read_conversion(&BARsensor);
+            sts = sem_wait(i2c_sem);
 
-            wait_us = ms5837_start_conversion(&BARsensor, SENSOR_TEMPERATURE, OSR_8192); // Temperature reading
-            delayFor(wait_us);
-            bar_temp_error = ms5837_read_conversion(&BARsensor);
+            if (sts == 0){
+                // This function will return a microsecond duration when we can safely attempt to read the value
+                wait_us = ms5837_start_conversion(&BARsensor, SENSOR_PRESSURE, OSR_8192); // Pressure reading
+                delayFor(wait_us);
+                bar_press_error = ms5837_read_conversion(&BARsensor);
 
-            ms5837_calculate(&BARsensor); // Once collected data it will convert them
+                wait_us = ms5837_start_conversion(&BARsensor, SENSOR_TEMPERATURE, OSR_8192); // Temperature reading
+                delayFor(wait_us);
+                bar_temp_error = ms5837_read_conversion(&BARsensor);
+
+                ms5837_calculate(&BARsensor); // Once collected data it will convert them
+
+                sem_post(i2c_sem);
+            }
 
             // TEMPERATURE
             messageTemp.temperature = ms5837_temperature_celcius(&BARsensor);
@@ -124,6 +141,12 @@ class PublisherBAR: public rclcpp::Node
 
             fd = WitInit(&BARsensor);
 
+            // SEMAPHORE CREATION
+            i2c_sem = sem_open(semname, oflag, mode, value);
+
+            if (i2c_sem != SEM_FAILED)
+                RCLCPP_INFO(this->get_logger(), "Semaphore created (BAROMETER)");
+
             ms5837_i2c_set_read_fn(&BARsensor, IICreadBytes);
             ms5837_i2c_set_write_fn(&BARsensor, IICwriteBytes);
 
@@ -144,6 +167,10 @@ int main(int argc, char const *argv[])
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<PublisherBAR>());
     rclcpp::shutdown();
+
+    // Semaphore destruction
+    sem_close(i2c_sem);
+    sem_unlink(semname);
     return 0;
 }
 

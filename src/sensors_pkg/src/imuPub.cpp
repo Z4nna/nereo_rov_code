@@ -3,12 +3,14 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <errno.h>
 #include "rclcpp/rclcpp.hpp"
 #include "../lib/wit_lib/wit_lib.h"
 #include "sensor_msgs/msg/imu.hpp"
 #include "diagnostic_array.hpp"
+#include "semaphore.h"
 
-#define MAXN 20
+#define MAXN 20 // Queue size
 
 using namespace std::chrono_literals;
 
@@ -27,6 +29,16 @@ typedef struct {
 typedef double float64;
 
 enum status {OK, WARN, ERROR, STALE};
+
+// SEMAPHORE
+sem_t *i2c_sem; // Semaphore variable
+int oflag = O_CREAT; // To create it from zero
+mode_t mode = 0644;
+const char semname[] = "/tmp/i2c1_interface"; // Name of the named semaphore
+unsigned int value = 1; // Value of the semaphore
+int sts; // Number that will be incremented or decremented when lock/unlock
+bool semCreated = false;
+
 
 void calcCovMatrix(std::queue<vec3> window, float64 *matrix){
 
@@ -93,7 +105,7 @@ class PublisherIMU: public rclcpp::Node
         bool imu_angle_error = false;
         bool imu_ang_vel_error = false;
 
-        status communicationState = INFO;
+        status communicationState = OK;
 
         std::queue<vec3> dataWindowAcc;
         std::queue<vec3> dataWindowAngVel;
@@ -105,17 +117,24 @@ class PublisherIMU: public rclcpp::Node
 
         void timer_callback()
         {
-
             // IMU Data
             int diagnosticSize = 0;
             imuValues imu;
             auto dataIMUmessage = sensor_msgs::msg::Imu();
 
-            // vvv Valgono 0 nel caso di errore di acquisizione vvv
+            // Semaphore request
+            sts = sem_wait(i2c_sem);
 
-            imu_acc_error = getAcc(imu.Acc);
-            imu_ang_vel_error = getAngVel(imu.AngVel);
-            imu_angle_error = getAngle(imu.Angle);
+            if (sts == 0){
+                // Semaphore acquired
+                // Read IMU data
+
+                imu_acc_error = getAcc(imu.Acc);
+                imu_ang_vel_error = getAngVel(imu.AngVel);
+                imu_angle_error = getAngle(imu.Angle);
+
+                sem_post(i2c_sem);
+            }
 
             dataIMUmessage.header.stamp = this->get_clock()->now();
             dataIMUmessage.header.frame_id = "IMU Data";
@@ -204,6 +223,12 @@ class PublisherIMU: public rclcpp::Node
             timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
 
             WitInit();
+
+            // SEMAPHORE CREATION
+            i2c_sem = sem_open(semname, oflag, mode, value);
+
+            if (i2c_sem != SEM_FAILED)
+                RCLCPP_INFO(this->get_logger(), "Semaphore created (IMU)");
         };
 };
 
@@ -212,6 +237,10 @@ int main(int argc, char const *argv[])
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<PublisherIMU>());
     rclcpp::shutdown();
+
+    // Semaphore destruction
+    sem_close(i2c_sem);
+    sem_unlink(semname);
     return 0;
 }
 
