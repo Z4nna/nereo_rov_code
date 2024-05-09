@@ -21,8 +21,6 @@ void PublisherBAR::timer_callback()
     RCLCPP_INFO(this->get_logger(), "Entered timer callback!");
     uint16_t wait_us = 0;
 
-    int diagnosticSize = 0;
-
     auto messageTemp = sensor_msgs::msg::Temperature();
     auto messagePress = sensor_msgs::msg::FluidPressure();
 

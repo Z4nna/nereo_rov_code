@@ -65,7 +65,6 @@ void PublisherIMU::timer_callback()
 {
 
     // IMU Data
-    int diagnosticSize = 0;
     imuValues imu;
     auto dataIMUmessage = sensor_msgs::msg::Imu();
 
@@ -118,35 +117,45 @@ void PublisherIMU::timer_callback()
 
     // GENERAL ERROR ENCOUTERED
     if (!imu_acc_error || !imu_ang_vel_error || !imu_angle_error){
-        diagnosticMessage.status[diagnosticSize].level = ERROR;
-        diagnosticMessage.status[diagnosticSize++].name = "Acquisition error";
-        diagnosticMessage.status[diagnosticSize].message = "Errors encountered while acquiring data from IMU";
+        auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnosticStatus.level = ERROR;
+        diagnosticStatus.name = "IMU data acquisition.";
+        diagnosticStatus.message = "Errors encountered while acquiring data from IMU";
+        diagnosticMessage.status.push_back(diagnosticStatus);
     }
     else{
-        diagnosticMessage.status[diagnosticSize].level = OK;
-        diagnosticMessage.status[diagnosticSize++].name = "Everything OK";
-        diagnosticMessage.status[diagnosticSize].message = "All data acquired correctly";
+        auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnosticStatus.level = OK;
+        diagnosticStatus.name = "IMU data acquisition.";
+        diagnosticStatus.message = "All data acquired correctly.";
+        diagnosticMessage.status.push_back(diagnosticStatus);
     }
 
     // ACCELERATION ERROR
     if (!imu_acc_error){
-        diagnosticMessage.status[diagnosticSize].level = ERROR;
-        diagnosticMessage.status[diagnosticSize].name = "Acceleration error";
-        diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Acceleration";
+        auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnosticStatus.level = ERROR;
+        diagnosticStatus.name = "IMU acceleration acquisition.";
+        diagnosticStatus.message = "Error while acquiring Acceleration";
+        diagnosticMessage.status.push_back(diagnosticStatus);
     }
 
     // ANGULAR VELOCITY ERROR
     if (!imu_ang_vel_error){
-        diagnosticMessage.status[diagnosticSize].level = ERROR;
-        diagnosticMessage.status[diagnosticSize].name = "Angular velocity error";
-        diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Angular velocity";
+        auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnosticStatus.level = ERROR;
+        diagnosticStatus.name = "IMU Angular velocity acquisition.";
+        diagnosticStatus.message = "Error while acquiring Angular velocity";
+        diagnosticMessage.status.push_back(diagnosticStatus);
     }
 
     // ANGLE ERROR
     if (!imu_angle_error){
-        diagnosticMessage.status[diagnosticSize].level = ERROR;
-        diagnosticMessage.status[diagnosticSize].name = "Angle error";
-        diagnosticMessage.status[diagnosticSize++].message = "Error while acquiring Angle";
+        auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnosticStatus.level = ERROR;
+        diagnosticStatus.name = "IMU Angle acquisition.";
+        diagnosticStatus.message = "Error while acquiring Angular velocity";
+        diagnosticMessage.status.push_back(diagnosticStatus);
     }
 
     dataIMUpublisher_->publish(dataIMUmessage);
