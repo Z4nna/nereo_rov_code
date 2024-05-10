@@ -1,5 +1,4 @@
-src/.vscode/c_cpp_properties.json
-src/.vscode/settings.json
+src/.vscode/
 src/nereo_interfaces/.vscode/c_cpp_properties.json
 src/nereo_interfaces/.vscode/settings.json
 src/nereo_pkg/.vscode/c_cpp_properties.json
