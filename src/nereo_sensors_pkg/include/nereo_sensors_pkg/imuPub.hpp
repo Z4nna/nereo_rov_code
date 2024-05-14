@@ -13,24 +13,25 @@
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
 
 #define MAXN 20
+#define WT61P_IIC_ADDR 0x50
 
 typedef struct {
     float x;
     float y;
     float z;
-} vec3;
+} Vec3;
 
 typedef struct {
-    vec3 acc;
-    vec3 angles;
-    vec3 ang_vel;
-} imuValues;
+    Vec3 acc;
+    Vec3 angles;
+    Vec3 ang_vel;
+} ImuValues;
 
 typedef double float64;
 
 enum status {OK, WARN, ERROR, STALE};
 
-void calcCovMatrix(std::queue<vec3> window, float64 *matrix);
+void calcCovMatrix(std::queue<Vec3> window, float64 *matrix);
 
 class PublisherIMU: public rclcpp::Node
 {
@@ -47,11 +48,11 @@ class PublisherIMU: public rclcpp::Node
 
         status communicationState = OK;
 
-        std::queue<vec3> dataWindowAcc;
-        std::queue<vec3> dataWindowAngVel;
-        std::queue<vec3> dataWindowAngle;
+        std::queue<Vec3> dataWindowAcc;
+        std::queue<Vec3> dataWindowAngVel;
+        std::queue<Vec3> dataWindowAngle;
 
-        vec3 Arr;
+        Vec3 Arr;
 
         float64 matrix[9];
 

@@ -1,11 +1,46 @@
 #include "nereo_sensors_pkg/imuPub.hpp"
-using namespace std::chrono_literals;
+
+char *i2c_device = "/dev/i2c-1";
+
+typedef struct {
+    Vec3 angles;
+    Vec3 angular_velocity;
+    Vec3 linear_acceleration;
+} ImuValues;
 
 int main(int argc, char const *argv[])
 {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<PublisherIMU>());
-    rclcpp::shutdown();
+    std::cout << "Started main." << std::endl;
+    int ret = WT61P_begin(i2c_device, WT61P_IIC_ADDR );
+    if (ret) 
+    {
+        std::cout << "Error initializing the IMU." << std::endl;
+    } else 
+    {
+        std::cout << "WT61P initialized correctly." << std::endl;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    for (;;std::this_thread::sleep_for(std::chrono::milliseconds(500)))
+    {
+        ImuValues data;
+        
+        WT61P_read_angular_vel();
+        data.angular_velocity.x = WT61P_get_angular_vel_x();
+        data.angular_velocity.y = WT61P_get_angular_vel_y();
+        data.angular_velocity.z = WT61P_get_angular_vel_z();
+
+        WT61P_read_acc();
+        data.linear_acceleration.x = WT61P_get_acc_x();
+        data.linear_acceleration.y = WT61P_get_acc_y();
+        data.linear_acceleration.z = WT61P_get_acc_z();
+
+        WT61P_read_angle();
+        data.angles = { WT61P_get_pitch(), WT61P_get_roll(), WT61P_get_yaw() };
+
+        std::cout << "Pitch: " << data.angles.x << "    Roll: " << data.angles.y << "    Yaw: " << data.angles.z << std::endl;
+        std::cout << "AngVel - X: " << data.angular_velocity.x << "    AngVel - Y: " << data.angular_velocity.y << "    AngVel - Z: " << data.angular_velocity.z << std::endl;
+        std::cout << "LinAcc - X: " << data.linear_acceleration.x << "    LinAcc - Y: " << data.linear_acceleration.y << "    LinAcc - Z: " << data.linear_acceleration.z << std::endl; 
+    }
     return 0;
 }
 
@@ -61,54 +96,32 @@ void calcCovMatrix(std::queue<Vec3> window, float64 *matrix) {
     matrix[5] = sum.z / MAXN; matrix[7] = sum.z / MAXN;
 }
 
-void PublisherIMU::timer_callback()
+/*
+void timer_callback()
 {
-    auto dataIMUmessage = sensor_msgs::msg::Imu();
-
-    dataIMUmessage.header.stamp = this->get_clock()->now();
-    dataIMUmessage.header.frame_id = "IMU Data";
+   
     
-    WT61P_read_angular_vel();
-    dataIMUmessage.angular_velocity.x = WT61P_get_angular_vel_x();
-    dataIMUmessage.angular_velocity.y = WT61P_get_angular_vel_y();
-    dataIMUmessage.angular_velocity.z = WT61P_get_angular_vel_z();
-    
-    WT61P_read_acc();
-    dataIMUmessage.linear_acceleration.x = WT61P_get_acc_x();
-    dataIMUmessage.linear_acceleration.y = WT61P_get_acc_y();
-    dataIMUmessage.linear_acceleration.z = WT61P_get_acc_z();
-
-    /// fix this part: use tf2 to convert from euler angles to quaternion
-    WT61P_read_angle();
-    Vec3 angles = { WT61P_get_pitch(), WT61P_get_roll(), WT61P_get_yaw() };
-    
-    dataIMUmessage.orientation.x = angles.x;
-    dataIMUmessage.orientation.y = angles.y; 
-    dataIMUmessage.orientation.z = angles.z;
 
     // Linear acceleration covariance
     calcCovMatrix(dataWindowAcc, matrix);
 
     for (int i = 0; i < 9; i++)
-        dataIMUmessage.linear_acceleration_covariance[i] = matrix[i];
+        data.linear_acceleration_covariance[i] = matrix[i];
 
     // Angular velocity covariance
     calcCovMatrix(dataWindowAngVel, matrix);
 
     for (int i = 0; i < 9; i++)
-        dataIMUmessage.angular_velocity_covariance[i] = matrix[i];
+        data.angular_velocity_covariance[i] = matrix[i];
 
     // Orientation covariance - SBAGLIATA - CONVERSIONE IN QUATERNIONI E POI MATRICE
     calcCovMatrix(dataWindowAngle, matrix);
     
     for (int i = 0; i < 9; i++)
-        dataIMUmessage.orientation_covariance[i] = matrix[i];
+        data.orientation_covariance[i] = matrix[i];
 
     // Diagnostic
-    auto diagnosticMessage = diagnostic_msgs::msg::DiagnosticArray();
     
-    diagnosticMessage.header.stamp = this->get_clock()->now();
-    diagnosticMessage.header.frame_id = "IMU Diagnostic";
 
     // GENERAL ERROR ENCOUTERED
     if (!imu_acc_error || !imu_ang_vel_error || !imu_angle_error){
@@ -155,19 +168,9 @@ void PublisherIMU::timer_callback()
         diagnosticMessage.status.push_back(diagnosticStatus);
     }
 
-    dataIMUpublisher_->publish(dataIMUmessage);
+    dataIMUpublisher_->publish(data);
     diagnosticPublisher_->publish(diagnosticMessage);
-}
-
-PublisherIMU::PublisherIMU(): Node("imu_publisher")
-{            
-    dataIMUpublisher_ = this->create_publisher<sensor_msgs::msg::Imu>("dataIMU_topic", 10);
-    diagnosticPublisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnosticIMU_topic", 10);
-
-    timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
-
-    WT61P_begin( ????, WT61P_IIC_ADDR );
-};
+} */
 
 /*Diagnostic status
 - [0]: General INFO

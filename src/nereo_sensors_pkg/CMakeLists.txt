@@ -19,33 +19,26 @@ add_executable(barometer_pub src/barPub.cpp)
 
 # barometer libs
 add_library(bar_iic src/barometer_sources/iic.c 
-  nereo_sensors_pkg/barometer_libs/iic.h
 )
 add_library(barometer_driver 
   src/barometer_sources/driver_ms5837.c 
-  nereo_sensors_pkg/barometer_libs/driver_ms5837.h
 )
 add_library(barometer_driver_basic 
   src/barometer_sources/driver_ms5837_basic.c 
-  nereo_sensors_pkg/barometer_libs/driver_ms5837_basic.h
 )
 add_library(barometer_interface 
   src/barometer_sources/raspberrypi4b_driver_ms5837_interface.c 
-  nereo_sensors_pkg/barometer_libs/raspberrypi4b_driver_ms5837_interface.h
 )
 
 # imu libs
 add_library(imu_i2c 
-  src/imu_sources/i2c.c 
-  nereo_sensors_pkg/imu_libs/i2c.h
+  src/imu_sources/i2c.c
 )
 add_library(wit_c_sdk
   src/imu_sources/wit_c_sdk.c
-  nereo_sensors_pkg/imu_libs/wit_c_sdk.h
 )
-add_library(WIT61P
-  src/imu_sources/WIT61P.c
-  nereo_sensors_pkg/imu_libs/WIT61P.h
+add_library(WT61P
+  src/imu_sources/WT61P.c
 )
 
 # barometer link libraries
@@ -63,7 +56,7 @@ target_link_libraries(barometer_pub
 )
 
 # imu link libraries
-target_link_libraries(WIT61P
+target_link_libraries(WT61P
   imu_i2c
   wit_c_sdk
 )
