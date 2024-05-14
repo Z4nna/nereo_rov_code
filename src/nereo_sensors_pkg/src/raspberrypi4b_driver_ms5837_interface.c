@@ -34,8 +34,8 @@
  * </table>
  */
 
-#include "driver_ms5837_interface.h"
-#include "iic.h"
+#include "nereo_sensors_pkg/driver_ms5837_interface.h"
+#include "nereo_sensors_pkg/iic.h"
 #include <stdarg.h>
 
 /**

@@ -34,7 +34,7 @@
  * </table>
  */
 
-#include "driver_ms5837_basic.h"
+#include "nereo_sensors_pkg/driver_ms5837_basic.h"
 
 static ms5837_handle_t gs_handle;        /**< ms5837 handle */
 

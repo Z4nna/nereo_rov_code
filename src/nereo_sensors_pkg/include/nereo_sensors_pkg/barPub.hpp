@@ -6,6 +6,7 @@
 #include <string>
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/temperature.hpp"
 #include "sensor_msgs/msg/fluid_pressure.hpp"
@@ -30,6 +31,9 @@ class PublisherBAR: public rclcpp::Node
 
         void timer_callback();
 
+        sensor_msgs::msg::Temperature messageTemp = sensor_msgs::msg::Temperature();
+        sensor_msgs::msg::FluidPressure messagePress = sensor_msgs::msg::FluidPressure();
+        diagnostic_msgs::msg::DiagnosticArray diagnosticMessage = diagnostic_msgs::msg::DiagnosticArray();
     public:
         PublisherBAR();
 };

@@ -13,27 +13,34 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 
-add_executable(imu_pub src/imuPub.cpp)
+#add_executable(imu_pub src/imuPub.cpp)
 add_executable(barometer_pub src/barPub.cpp)
 
-add_library(wit_lib src/wit_lib.cpp)
-add_library(ms5837_lib src/ms5837.c)
+add_library(iic src/iic.c)
+add_library(barometer_driver src/driver_ms5837.c)
+add_library(barometer_driver_basic src/driver_ms5837_basic.c)
+add_library(barometer_interface src/raspberrypi4b_driver_ms5837_interface.c)
 
-target_link_libraries(wit_lib -lwiringPi)
-
-target_link_libraries(imu_pub
-  wit_lib
+target_link_libraries(barometer_interface 
+  iic
+  barometer_driver
 )
+target_link_libraries(barometer_driver_basic
+  barometer_interface
+)
+
 target_link_libraries(barometer_pub 
-  -lwiringPi
-  ms5837_lib
+  barometer_driver
+  barometer_driver_basic
+  barometer_interface
 )
-ament_target_dependencies(imu_pub 
-	rclcpp 
-	std_msgs 
-	sensor_msgs
-	diagnostic_msgs
-)
+
+#ament_target_dependencies(imu_pub 
+#	rclcpp 
+#	std_msgs 
+#	sensor_msgs
+#	diagnostic_msgs
+#)
 ament_target_dependencies(barometer_pub 
 	rclcpp 
 	std_msgs 
@@ -44,7 +51,7 @@ ament_target_dependencies(barometer_pub
 
 install(
   TARGETS
-  imu_pub
+  #imu_pub
   barometer_pub
   DESTINATION lib/${PROJECT_NAME}
 )

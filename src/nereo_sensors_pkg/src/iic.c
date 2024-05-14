@@ -34,7 +34,7 @@
  * </table>
  */
 
-#include "iic.h"
+#include "nereo_sensors_pkg/iic.h"
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
