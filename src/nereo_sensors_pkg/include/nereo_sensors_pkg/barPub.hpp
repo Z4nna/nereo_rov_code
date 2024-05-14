@@ -6,23 +6,20 @@
 #include <string>
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/temperature.hpp"
 #include "sensor_msgs/msg/fluid_pressure.hpp"
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
-#include "ms5837.h"
-#include <wiringPiI2C.h>
 
-// Status values for diagnostic array
+#include "driver_ms5837.h"
+#include "driver_ms5837_basic.h"
+#include "driver_ms5837_interface.h"
+#include "iic.h"
+
+// STATUS VALUES FOR DIAGNOSTIC
 enum status {OK, WARN, ERROR, STALE};
 
-// I2C FUNCTIONS
-int32_t IICInit(ms5837_t *sensor);
-int32_t IICreadBytes(uint8_t, uint8_t, uint8_t *, uint8_t);
-int32_t IICwriteBytes(uint8_t, uint8_t, uint8_t *, uint8_t);
-
-// Delay function
-void delayFor(int);
 
 class PublisherBAR: public rclcpp::Node
 {
@@ -31,8 +28,12 @@ class PublisherBAR: public rclcpp::Node
         rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressPublisher_;
         rclcpp::TimerBase::SharedPtr timer_;
         rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnosticPublisher_;
-        ms5837_t BARsensor;
+
         void timer_callback();
+
+        sensor_msgs::msg::Temperature messageTemp = sensor_msgs::msg::Temperature();
+        sensor_msgs::msg::FluidPressure messagePress = sensor_msgs::msg::FluidPressure();
+        diagnostic_msgs::msg::DiagnosticArray diagnosticMessage = diagnostic_msgs::msg::DiagnosticArray();
     public:
         PublisherBAR();
 };
