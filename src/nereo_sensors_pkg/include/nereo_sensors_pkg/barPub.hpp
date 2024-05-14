@@ -20,7 +20,6 @@
 // STATUS VALUES FOR DIAGNOSTIC
 enum status {OK, WARN, ERROR, STALE};
 
-
 class PublisherBAR: public rclcpp::Node
 {
     private:

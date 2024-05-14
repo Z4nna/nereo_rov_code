@@ -1,4 +1,4 @@
-#include "WIT61P.h"
+#include "WT61P.h"
 
 #define TIMEOUT	3
 #define RETRY	3

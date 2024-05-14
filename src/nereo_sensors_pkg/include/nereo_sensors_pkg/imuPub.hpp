@@ -2,11 +2,12 @@
 #define IMU_PUB_H
 
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <queue>
 #include <string>
-#include "wit_lib.hpp"
+
+#include "imu_libs/WT61P.h"
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
@@ -14,16 +15,16 @@
 #define MAXN 20
 
 typedef struct {
-    float Acc[3];
-    float Angle[3];
-    float AngVel[3];
-} imuValues;
-
-typedef struct {
     float x;
     float y;
     float z;
 } vec3;
+
+typedef struct {
+    vec3 acc;
+    vec3 angles;
+    vec3 ang_vel;
+} imuValues;
 
 typedef double float64;
 
