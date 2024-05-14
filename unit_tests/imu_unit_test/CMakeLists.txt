@@ -7,7 +7,7 @@ endif()
 
 include_directories(include)
 
-add_executable(imu_test src/imuPub.cpp)
+add_executable(imu_unit_test src/imuPub.cpp)
 
 # imu libs
 add_library(imu_i2c 
@@ -25,11 +25,11 @@ target_link_libraries(WT61P
   imu_i2c
   wit_c_sdk
 )
-target_link_libraries(imu_test
+target_link_libraries(imu_unit_test
   WT61P
 )
 
 install(TARGETS
-  imu_test
+  imu_unit_test
   DESTINATION lib/${PROJECT_NAME}
 )

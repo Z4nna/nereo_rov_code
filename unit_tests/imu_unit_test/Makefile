@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/pi/Desktop/prova_imu
+CMAKE_SOURCE_DIR = /home/pi/Desktop/prova_codice_imu/nereo_rov_code/unit_tests/imu_unit_test
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/pi/Desktop/prova_imu
+CMAKE_BINARY_DIR = /home/pi/Desktop/prova_codice_imu/nereo_rov_code/unit_tests/imu_unit_test
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -132,9 +132,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/Desktop/prova_imu/CMakeFiles /home/pi/Desktop/prova_imu//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/Desktop/prova_codice_imu/nereo_rov_code/unit_tests/imu_unit_test/CMakeFiles /home/pi/Desktop/prova_codice_imu/nereo_rov_code/unit_tests/imu_unit_test//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/Desktop/prova_imu/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/pi/Desktop/prova_codice_imu/nereo_rov_code/unit_tests/imu_unit_test/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -162,17 +162,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named imu_test
+# Target rules for targets named imu_unit_test
 
 # Build rule for target.
-imu_test: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 imu_test
-.PHONY : imu_test
+imu_unit_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 imu_unit_test
+.PHONY : imu_unit_test
 
 # fast build rule for target.
-imu_test/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_test.dir/build.make CMakeFiles/imu_test.dir/build
-.PHONY : imu_test/fast
+imu_unit_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_unit_test.dir/build.make CMakeFiles/imu_unit_test.dir/build
+.PHONY : imu_unit_test/fast
 
 #=============================================================================
 # Target rules for targets named imu_i2c
@@ -218,7 +218,7 @@ src/imuPub.o: src/imuPub.cpp.o
 
 # target to build an object file
 src/imuPub.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_test.dir/build.make CMakeFiles/imu_test.dir/src/imuPub.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_unit_test.dir/build.make CMakeFiles/imu_unit_test.dir/src/imuPub.cpp.o
 .PHONY : src/imuPub.cpp.o
 
 src/imuPub.i: src/imuPub.cpp.i
@@ -226,7 +226,7 @@ src/imuPub.i: src/imuPub.cpp.i
 
 # target to preprocess a source file
 src/imuPub.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_test.dir/build.make CMakeFiles/imu_test.dir/src/imuPub.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_unit_test.dir/build.make CMakeFiles/imu_unit_test.dir/src/imuPub.cpp.i
 .PHONY : src/imuPub.cpp.i
 
 src/imuPub.s: src/imuPub.cpp.s
@@ -234,7 +234,7 @@ src/imuPub.s: src/imuPub.cpp.s
 
 # target to generate assembly for a file
 src/imuPub.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_test.dir/build.make CMakeFiles/imu_test.dir/src/imuPub.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/imu_unit_test.dir/build.make CMakeFiles/imu_unit_test.dir/src/imuPub.cpp.s
 .PHONY : src/imuPub.cpp.s
 
 src/imu_sources/WT61P.o: src/imu_sources/WT61P.c.o
@@ -323,7 +323,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... WT61P"
 	@echo "... imu_i2c"
-	@echo "... imu_test"
+	@echo "... imu_unit_test"
 	@echo "... wit_c_sdk"
 	@echo "... src/imuPub.o"
 	@echo "... src/imuPub.i"

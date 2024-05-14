@@ -162,17 +162,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named barometer
+# Target rules for targets named barometer_unit_test
 
 # Build rule for target.
-barometer: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 barometer
-.PHONY : barometer
+barometer_unit_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 barometer_unit_test
+.PHONY : barometer_unit_test
 
 # fast build rule for target.
-barometer/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer.dir/build.make CMakeFiles/barometer.dir/build
-.PHONY : barometer/fast
+barometer_unit_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer_unit_test.dir/build.make CMakeFiles/barometer_unit_test.dir/build
+.PHONY : barometer_unit_test/fast
 
 #=============================================================================
 # Target rules for targets named iic
@@ -231,7 +231,7 @@ barPub.o: barPub.cpp.o
 
 # target to build an object file
 barPub.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer.dir/build.make CMakeFiles/barometer.dir/barPub.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer_unit_test.dir/build.make CMakeFiles/barometer_unit_test.dir/barPub.cpp.o
 .PHONY : barPub.cpp.o
 
 barPub.i: barPub.cpp.i
@@ -239,7 +239,7 @@ barPub.i: barPub.cpp.i
 
 # target to preprocess a source file
 barPub.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer.dir/build.make CMakeFiles/barometer.dir/barPub.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer_unit_test.dir/build.make CMakeFiles/barometer_unit_test.dir/barPub.cpp.i
 .PHONY : barPub.cpp.i
 
 barPub.s: barPub.cpp.s
@@ -247,7 +247,7 @@ barPub.s: barPub.cpp.s
 
 # target to generate assembly for a file
 barPub.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer.dir/build.make CMakeFiles/barometer.dir/barPub.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/barometer_unit_test.dir/build.make CMakeFiles/barometer_unit_test.dir/barPub.cpp.s
 .PHONY : barPub.cpp.s
 
 driver_ms5837.o: driver_ms5837.c.o
@@ -358,10 +358,10 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... barometer"
 	@echo "... barometer_driver"
 	@echo "... barometer_driver_basic"
 	@echo "... barometer_interface"
+	@echo "... barometer_unit_test"
 	@echo "... iic"
 	@echo "... barPub.o"
 	@echo "... barPub.i"

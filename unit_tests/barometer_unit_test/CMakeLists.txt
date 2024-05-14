@@ -5,7 +5,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-add_executable(barometer barPub.cpp)
+add_executable(barometer_unit_test barPub.cpp)
 
 add_library(iic iic.c)
 add_library(barometer_driver driver_ms5837.c)
@@ -20,7 +20,7 @@ target_link_libraries(barometer_driver_basic
   barometer_interface
 )
 
-target_link_libraries(barometer
+target_link_libraries(barometer_unit_test
   barometer_driver
   barometer_driver_basic
   barometer_interface
@@ -28,6 +28,6 @@ target_link_libraries(barometer
 
 install(
   TARGETS
-  barometer
+  barometer_unit_test
   DESTINATION lib/${PROJECT_NAME}
 )
