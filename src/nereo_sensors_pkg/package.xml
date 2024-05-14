@@ -14,10 +14,8 @@
   <depend>stdbool</depend>
   <depend>stdint</depend>
   <depend>string</depend>
-  <depend>wiringPi</depend>
   <depend>chrono</depend>
   <depend>memory</depend>
-  <depend>ms5837</depend>
   <depend>queue</depend>
   <depend>diagnostic_msgs</depend>
   <test_depend>ament_lint_auto</test_depend>

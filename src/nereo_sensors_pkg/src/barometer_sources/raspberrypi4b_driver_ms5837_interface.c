@@ -34,8 +34,8 @@
  * </table>
  */
 
-#include "nereo_sensors_pkg/driver_ms5837_interface.h"
-#include "nereo_sensors_pkg/iic.h"
+#include "nereo_sensors_pkg/barometer_libs/driver_ms5837_interface.h"
+#include "nereo_sensors_pkg/barometer_libs/iic.h"
 #include <stdarg.h>
 
 /**

@@ -34,7 +34,7 @@
  * </table>
  */
 
-#include "nereo_sensors_pkg/driver_ms5837.h" 
+#include "nereo_sensors_pkg/barometer_libs/driver_ms5837.h" 
 
 /**
  * @brief chip information definition
