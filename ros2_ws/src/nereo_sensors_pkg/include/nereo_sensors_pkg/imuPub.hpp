@@ -5,6 +5,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <thread>
 
 #include "imu_libs/WT61P.h"
 
@@ -14,6 +15,8 @@
 
 #define MAXN 20
 #define WT61P_IIC_ADDR 0x50
+
+char *i2c_device = "/dev/i2c-1";
 
 typedef struct {
     float x;
@@ -31,7 +34,7 @@ typedef double float64;
 
 enum status {OK, WARN, ERROR, STALE};
 
-void calcCovMatrix(std::queue<Vec3> window, float64 *matrix);
+//void calcCovMatrix(std::queue<Vec3> window, float64 *matrix);
 
 class PublisherIMU: public rclcpp::Node
 {
@@ -41,18 +44,16 @@ class PublisherIMU: public rclcpp::Node
         
         rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnosticPublisher_;
 
-        // Status indicators
+        /* Status indicators
         bool imu_acc_error = false;
         bool imu_angle_error = false;
-        bool imu_ang_vel_error = false;
+        bool imu_ang_vel_error = false;*/
 
         status communicationState = OK;
 
         std::queue<Vec3> dataWindowAcc;
         std::queue<Vec3> dataWindowAngVel;
         std::queue<Vec3> dataWindowAngle;
-
-        Vec3 Arr;
 
         float64 matrix[9];
 

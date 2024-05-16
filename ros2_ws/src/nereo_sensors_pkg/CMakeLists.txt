@@ -49,7 +49,7 @@ target_link_libraries(barometer_interface
 target_link_libraries(barometer_driver_basic
   barometer_interface
 )
-target_link_libraries(barometer_pub 
+target_link_libraries(barometer_pub
   barometer_driver
   barometer_driver_basic
   barometer_interface
@@ -57,6 +57,11 @@ target_link_libraries(barometer_pub
 
 # imu link libraries
 target_link_libraries(WT61P
+  imu_i2c
+  wit_c_sdk
+)
+target_link_libraries(imu_pub
+  WT61P
   imu_i2c
   wit_c_sdk
 )

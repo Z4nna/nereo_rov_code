@@ -1,16 +1,7 @@
-#include "WT61P.h"
-
-#define TIMEOUT	3
-#define RETRY	3
+#include "nereo_sensors_pkg/imu_libs/WT61P.h"
 
 static int fd;
 char *i2c_dev = "/dev/i2c-1";
-
-#define ACC_UPDATE		0x01
-#define GYRO_UPDATE		0x02
-#define ANGLE_UPDATE	0x04
-#define MAG_UPDATE		0x08
-#define READ_UPDATE		0x80
 
 static volatile char s_cDataUpdate = 0;
 
@@ -90,7 +81,7 @@ static void AutoScanSensor(void)
 }
 
 int WT61P_begin(char* dev, uint8_t addr){
-	fd = i2c_open(dev, TIMEOUT, RETRY);
+	fd = i2c_open(dev, WT_TIMEOUT, RETRY);
 	if( fd < 0){
 		printf("open %s fail\n", dev);
 		return -1;

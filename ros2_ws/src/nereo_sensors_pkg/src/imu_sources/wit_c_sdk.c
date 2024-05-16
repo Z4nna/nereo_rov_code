@@ -1,4 +1,4 @@
-#include "wit_c_sdk.h"
+#include "nereo_sensors_pkg/imu_libs/wit_c_sdk.h"
 
 static SerialWrite p_WitSerialWriteFunc = NULL;
 static WitI2cWrite p_WitI2cWriteFunc    = NULL;

@@ -12,10 +12,10 @@
 #include "sensor_msgs/msg/fluid_pressure.hpp"
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
 
-#include "barometer_libs/driver_ms5837.h"
-#include "barometer_libs/driver_ms5837_basic.h"
-#include "barometer_libsdriver_ms5837_interface.h"
-#include "barometer_libs/iic.h"
+#include "nereo_sensors_pkg/barometer_libs/driver_ms5837.h"
+#include "nereo_sensors_pkg/barometer_libs/driver_ms5837_basic.h"
+#include "nereo_sensors_pkg/barometer_libs/driver_ms5837_interface.h"
+#include "nereo_sensors_pkg/barometer_libs/iic.h"
 
 // STATUS VALUES FOR DIAGNOSTIC
 enum status {OK, WARN, ERROR, STALE};

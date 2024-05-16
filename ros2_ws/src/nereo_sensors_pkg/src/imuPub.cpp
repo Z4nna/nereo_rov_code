@@ -86,6 +86,7 @@ void PublisherIMU::timer_callback()
     dataIMUmessage.orientation.y = angles.y; 
     dataIMUmessage.orientation.z = angles.z;
 
+    /*
     // Linear acceleration covariance
     calcCovMatrix(dataWindowAcc, matrix);
 
@@ -154,9 +155,9 @@ void PublisherIMU::timer_callback()
         diagnosticStatus.message = "Error while acquiring Angular velocity";
         diagnosticMessage.status.push_back(diagnosticStatus);
     }
-
-    dataIMUpublisher_->publish(dataIMUmessage);
     diagnosticPublisher_->publish(diagnosticMessage);
+    */   
+   dataIMUpublisher_->publish(dataIMUmessage);
 }
 
 PublisherIMU::PublisherIMU(): Node("imu_publisher")
@@ -166,7 +167,7 @@ PublisherIMU::PublisherIMU(): Node("imu_publisher")
 
     timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
 
-    WT61P_begin( ????, WT61P_IIC_ADDR );
+    int ret = WT61P_begin(i2c_device, WT61P_IIC_ADDR);
 };
 
 /*Diagnostic status

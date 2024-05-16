@@ -1,4 +1,4 @@
-#include "i2c.h"
+#include "nereo_sensors_pkg/imu_libs/i2c.h"
 
 static int fd;
 

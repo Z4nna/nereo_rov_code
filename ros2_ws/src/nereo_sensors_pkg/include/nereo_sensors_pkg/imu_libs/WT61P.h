@@ -9,7 +9,7 @@ extern "C" {
 #include "wit_c_sdk.h"
 #include <stdio.h>
 
-#define TIMEOUT	3
+#define WT_TIMEOUT	3
 #define RETRY	3
 
 #define ACC_UPDATE		0x01
