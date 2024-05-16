@@ -9,12 +9,12 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-void calcCovMatrix(std::queue<vec3> window, float64 *matrix) {
+void calcCovMatrix(std::queue<Vec3> window, float64 *matrix) {
 
-    std::queue<vec3> copy = window;
+    std::queue<Vec3> copy = window;
 
-    vec3 mean;
-    vec3 sum = {0, 0, 0};
+    Vec3 mean;
+    Vec3 sum = {0, 0, 0};
 
     while(!copy.empty()){
         sum.x += copy.front().x;
@@ -63,34 +63,30 @@ void calcCovMatrix(std::queue<vec3> window, float64 *matrix) {
 
 void PublisherIMU::timer_callback()
 {
-
-    // IMU Data
-    imuValues imu;
     auto dataIMUmessage = sensor_msgs::msg::Imu();
-
-    // vvv Valgono 0 nel caso di errore di acquisizione vvv
-
-    imu_acc_error = getAcc(imu.Acc);
-    imu_ang_vel_error = getAngVel(imu.AngVel);
-    imu_angle_error = getAngle(imu.Angle);
 
     dataIMUmessage.header.stamp = this->get_clock()->now();
     dataIMUmessage.header.frame_id = "IMU Data";
     
-    dataIMUmessage.angular_velocity.x = imu.AngVel[0];
-    dataIMUmessage.angular_velocity.y = imu.AngVel[1];
-    dataIMUmessage.angular_velocity.z = imu.AngVel[2];
+    WT61P_read_angular_vel();
+    dataIMUmessage.angular_velocity.x = WT61P_get_angular_vel_x();
+    dataIMUmessage.angular_velocity.y = WT61P_get_angular_vel_y();
+    dataIMUmessage.angular_velocity.z = WT61P_get_angular_vel_z();
     
-    dataIMUmessage.linear_acceleration.x = imu.Acc[0];
-    dataIMUmessage.linear_acceleration.y = imu.Acc[1];
-    dataIMUmessage.linear_acceleration.z = imu.Acc[2];
+    WT61P_read_acc();
+    dataIMUmessage.linear_acceleration.x = WT61P_get_acc_x();
+    dataIMUmessage.linear_acceleration.y = WT61P_get_acc_y();
+    dataIMUmessage.linear_acceleration.z = WT61P_get_acc_z();
 
-    dataIMUmessage.orientation.x = imu.Angle[0];
-    dataIMUmessage.orientation.y = imu.Angle[1];
-    dataIMUmessage.orientation.z = imu.Angle[2];
+    /// fix this part: use tf2 to convert from euler angles to quaternion
+    WT61P_read_angle();
+    Vec3 angles = { WT61P_get_pitch(), WT61P_get_roll(), WT61P_get_yaw() };
+    
+    dataIMUmessage.orientation.x = angles.x;
+    dataIMUmessage.orientation.y = angles.y; 
+    dataIMUmessage.orientation.z = angles.z;
 
-    // Capire cosa mettere nella quarta componente del quaternione
-
+    /*
     // Linear acceleration covariance
     calcCovMatrix(dataWindowAcc, matrix);
 
@@ -141,7 +137,8 @@ void PublisherIMU::timer_callback()
     }
 
     // ANGULAR VELOCITY ERROR
-    if (!imu_ang_vel_error){
+    if (!imu_ang_vel_error)
+    {
         auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
         diagnosticStatus.level = ERROR;
         diagnosticStatus.name = "IMU Angular velocity acquisition.";
@@ -150,16 +147,17 @@ void PublisherIMU::timer_callback()
     }
 
     // ANGLE ERROR
-    if (!imu_angle_error){
+    if (!imu_angle_error)
+    {
         auto diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
         diagnosticStatus.level = ERROR;
         diagnosticStatus.name = "IMU Angle acquisition.";
         diagnosticStatus.message = "Error while acquiring Angular velocity";
         diagnosticMessage.status.push_back(diagnosticStatus);
     }
-
-    dataIMUpublisher_->publish(dataIMUmessage);
     diagnosticPublisher_->publish(diagnosticMessage);
+    */   
+   dataIMUpublisher_->publish(dataIMUmessage);
 }
 
 PublisherIMU::PublisherIMU(): Node("imu_publisher")
@@ -169,7 +167,7 @@ PublisherIMU::PublisherIMU(): Node("imu_publisher")
 
     timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
 
-    WitInit();
+    int ret = WT61P_begin(i2c_device, WT61P_IIC_ADDR);
 };
 
 /*Diagnostic status

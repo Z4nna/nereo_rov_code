@@ -2,34 +2,39 @@
 #define IMU_PUB_H
 
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <queue>
 #include <string>
-#include "wit_lib.hpp"
+#include <thread>
+
+#include "imu_libs/WT61P.h"
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
 
 #define MAXN 20
+#define WT61P_IIC_ADDR 0x50
 
-typedef struct {
-    float Acc[3];
-    float Angle[3];
-    float AngVel[3];
-} imuValues;
+char *i2c_device = "/dev/i2c-1";
 
 typedef struct {
     float x;
     float y;
     float z;
-} vec3;
+} Vec3;
+
+typedef struct {
+    Vec3 acc;
+    Vec3 angles;
+    Vec3 ang_vel;
+} ImuValues;
 
 typedef double float64;
 
 enum status {OK, WARN, ERROR, STALE};
 
-void calcCovMatrix(std::queue<vec3> window, float64 *matrix);
+//void calcCovMatrix(std::queue<Vec3> window, float64 *matrix);
 
 class PublisherIMU: public rclcpp::Node
 {
@@ -39,18 +44,16 @@ class PublisherIMU: public rclcpp::Node
         
         rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnosticPublisher_;
 
-        // Status indicators
+        /* Status indicators
         bool imu_acc_error = false;
         bool imu_angle_error = false;
-        bool imu_ang_vel_error = false;
+        bool imu_ang_vel_error = false;*/
 
         status communicationState = OK;
 
-        std::queue<vec3> dataWindowAcc;
-        std::queue<vec3> dataWindowAngVel;
-        std::queue<vec3> dataWindowAngle;
-
-        vec3 Arr;
+        std::queue<Vec3> dataWindowAcc;
+        std::queue<Vec3> dataWindowAngVel;
+        std::queue<Vec3> dataWindowAngle;
 
         float64 matrix[9];
 
