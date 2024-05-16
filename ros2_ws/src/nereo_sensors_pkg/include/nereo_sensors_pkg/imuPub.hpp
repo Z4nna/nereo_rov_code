@@ -32,28 +32,28 @@ typedef struct {
 
 typedef double float64;
 
-enum status {OK, WARN, ERROR, STALE};
+enum Status {OK, WARN, ERROR, STALE};
 
 //void calcCovMatrix(std::queue<Vec3> window, float64 *matrix);
 
 class PublisherIMU: public rclcpp::Node
 {
     private:
-        rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr dataIMUpublisher_;
+        rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_data_publisher_;
         rclcpp::TimerBase::SharedPtr timer_;
         
-        rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnosticPublisher_;
+        rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr imu_diagnostic_publisher_;
 
         /* Status indicators
         bool imu_acc_error = false;
         bool imu_angle_error = false;
         bool imu_ang_vel_error = false;*/
 
-        status communicationState = OK;
+        status communication_state = OK;
 
-        std::queue<Vec3> dataWindowAcc;
-        std::queue<Vec3> dataWindowAngVel;
-        std::queue<Vec3> dataWindowAngle;
+        std::queue<Vec3> acceleration_window;
+        std::queue<Vec3> angular_velocity_window;
+        std::queue<Vec3> angles_window;
 
         float64 matrix[9];
 
