@@ -9,7 +9,7 @@ Inside the src folder there are two packages:
    This package contains the code for the C++ nodes, used to communicate with the I2C sensors.
 ## Setup instructions
 ### Manual installation
-1. In the cloned folder, run:
+1. In the ros2_ws folder, run:
    ```bash
     colcon build
     ```
