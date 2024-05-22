@@ -71,7 +71,7 @@ void PublisherIMU::timer_callback()
     WT61P_read_angular_vel();
     imu_data_message.angular_velocity.x = WT61P_get_angular_vel_x();
     imu_data_message.angular_velocity.y = WT61P_get_angular_vel_y();
-    dataIMUmessage.angular_velocity.z = WT61P_get_angular_vel_z();
+    imu_data_message.angular_velocity.z = WT61P_get_angular_vel_z();
     
     WT61P_read_acc();
     imu_data_message.linear_acceleration.x = WT61P_get_acc_x();
@@ -158,13 +158,13 @@ void PublisherIMU::timer_callback()
     diagnostic_publisher_->publish(imu_diagnostic_message);
     */
    
-   data_publisher_->publish(imu_data_message);
+   imu_data_publisher_->publish(imu_data_message);
 }
 
 PublisherIMU::PublisherIMU(): Node("imu_publisher")
 {            
-    data_publisher_ = this->create_publisher<sensor_msgs::msg::Imu>("imu_data", 10);
-    diagnostic_publisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("imu_diagnostic", 10);
+    imu_data_publisher_ = this->create_publisher<sensor_msgs::msg::Imu>("imu_data", 10);
+    imu_diagnostic_publisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("imu_diagnostic", 10);
 
     timer_ = this->create_wall_timer(200ms, std::bind(&PublisherIMU::timer_callback, this));
 

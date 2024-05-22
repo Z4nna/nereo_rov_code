@@ -48,8 +48,7 @@ class PublisherIMU: public rclcpp::Node
         bool imu_acc_error = false;
         bool imu_angle_error = false;
         bool imu_ang_vel_error = false;*/
-
-        status communication_state = OK;
+        Status communication_state = OK;
 
         std::queue<Vec3> acceleration_window;
         std::queue<Vec3> angular_velocity_window;
