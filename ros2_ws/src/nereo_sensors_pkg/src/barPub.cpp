@@ -2,11 +2,11 @@
 using namespace std::chrono_literals;
 
 // BAROMETER DATA VARIABLES
-float temperature_c;       // Temperature in Celsius
+float temperature_celsius;       // Temperature in Celsius
 float pressure_mbar;       // Pressure in mbar
 float pressure_zero;       // Pressure at sea level
 int res;                   // Result of barometer acquisition
-int hasError = 0;     // Flag for error in barometer acquisition
+int has_error = 0;     // Flag for error in barometer acquisition
 
 //=========================================================================================================
 
@@ -25,58 +25,59 @@ void PublisherBAR::timer_callback()
     RCLCPP_INFO(this->get_logger(), "Entered timer callback!");
 
     // ACQUISITION
-    hasError = ms5837_basic_read(&temperature_c, &pressure_mbar);
+    has_error = ms5837_basic_read(&temperature_celsius, &pressure_mbar);
 
     RCLCPP_INFO(this->get_logger(), "Data acquired!");
 
     // TEMPERATURE
-    messageTemp.temperature = temperature_c;
-    messageTemp.variance = 0;                                           // 0: Unknown variance
-    messageTemp.header.stamp = this->get_clock()->now();                // Time data type from builtin_interfaces (???)
-    messageTemp.header.frame_id = "Frame ID Barometer - Temperature";
+    temperature_message.temperature = temperature_celsius;
+    temperature_message.variance = 0;                                           // 0: Unknown variance
+    temperature_message.header.stamp = this->get_clock()->now();                // Time data type from builtin_interfaces (???)
+    temperature_message.header.frame_id = "Frame ID Barometer - Temperature";
     RCLCPP_INFO(this->get_logger(), "Temperature message filled!");
+    
     // PRESSURE
-    messagePress.fluid_pressure = pressure_mbar;
-    messagePress.variance = 0;                                          // 0: Unknown variance
-    messagePress.header.stamp = this->get_clock()->now();
-    messagePress.header.frame_id = "Frame ID Barometer - Pressure";
+    pressure_message.fluid_pressure = pressure_mbar;
+    pressure_message.variance = 0;                                          // 0: Unknown variance
+    pressure_message.header.stamp = this->get_clock()->now();
+    pressure_message.header.frame_id = "Frame ID Barometer - Pressure";
     RCLCPP_INFO(this->get_logger(), "Pressure message filled!");
 
-    diagnosticMessage.header.stamp = this->get_clock()->now();
-    diagnosticMessage.header.frame_id = "Barometer Diagnostic";
+    diagnostic_message.header.stamp = this->get_clock()->now();
+    diagnostic_message.header.frame_id = "Barometer Diagnostic";
 
     // DIAGNOSTIC DURING ACQUISITION
-    if (hasError)
+    if (has_error)
     {
-        diagnostic_msgs::msg::DiagnosticStatus diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
-        diagnosticStatus.level = ERROR;
-        diagnosticStatus.name = "Barometer acqiuisition error";
-        diagnosticStatus.message = "Error while acquiring data from barometer";
-        diagnosticMessage.status.push_back(diagnosticStatus);
+        diagnostic_msgs::msg::DiagnosticStatus diagnostic_status = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnostic_status.level = ERROR;
+        diagnostic_status.name = "Barometer acqiuisition error";
+        diagnostic_status.message = "Error while acquiring data from barometer";
+        diagnostic_message.status.push_back(diagnostic_status);
         RCLCPP_INFO(this->get_logger(), "Error while acquiring data from barometer.");
     }
     else {
-        diagnostic_msgs::msg::DiagnosticStatus diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
-        diagnosticStatus.level = OK;
-        diagnosticStatus.name = "Barometer acquisition";
-        diagnosticStatus.message = "Data acquired correctly";
-        diagnosticMessage.status.push_back(diagnosticStatus);
+        diagnostic_msgs::msg::DiagnosticStatus diagnostic_status = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnostic_status.level = OK;
+        diagnostic_status.name = "Barometer acquisition";
+        diagnostic_status.message = "Data acquired correctly";
+        diagnostic_message.status.push_back(diagnostic_status);
         RCLCPP_INFO(this->get_logger(), "Data acquired correctly.");
     }
 
     // PUBLISHING
     RCLCPP_INFO(this->get_logger(), "Ready to publish!");
-    tempPublisher_->publish(messageTemp);
-    pressPublisher_->publish(messagePress);
-    diagnosticPublisher_->publish(diagnosticMessage);
+    temperature_publisher_->publish(temperature_message);
+    pressure_publisher_->publish(pressure_message);
+    diagnostic_publisher_->publish(diagnostic_message);
     RCLCPP_INFO(this->get_logger(), "Published!");
 }
 
 PublisherBAR::PublisherBAR(): Node("bar_publisher")
 {
-    tempPublisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("barTemp_topic", 10);
-    pressPublisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("barPress_topic", 10);
-    diagnosticPublisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnosticBAR_topic", 10);
+    temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("barometer_temperature", 10);
+    pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("barometer_pressure", 10);
+    diagnostic_publisher_ = this->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("barometer_diagnostic", 10);
     RCLCPP_INFO(this->get_logger(), "Publishers created");
     
     timer_ = this->create_wall_timer(300ms, std::bind(&PublisherBAR::timer_callback, this));
@@ -87,11 +88,11 @@ PublisherBAR::PublisherBAR(): Node("bar_publisher")
     // DIAGNOSTIC DURING INITIALIZATION
     if (res != 0){
         RCLCPP_INFO(this->get_logger(), "Error while initializing barometer");
-        diagnostic_msgs::msg::DiagnosticStatus diagnosticStatus = diagnostic_msgs::msg::DiagnosticStatus();
-        diagnosticStatus.level = ERROR;
-        diagnosticStatus.name = "Barometer initialization error";
-        diagnosticStatus.message = "Error while initializing barometer";
-        diagnosticMessage.status.push_back(diagnosticStatus);
+        diagnostic_msgs::msg::DiagnosticStatus diagnostic_status = diagnostic_msgs::msg::DiagnosticStatus();
+        diagnostic_status.level = ERROR;
+        diagnostic_status.name = "Barometer initialization error";
+        diagnostic_status.message = "Error while initializing barometer";
+        diagnostic_message.status.push_back(diagnostic_status);
         RCLCPP_INFO(this->get_logger(), "Barometer initialization error");
     }
     else{
@@ -100,7 +101,7 @@ PublisherBAR::PublisherBAR(): Node("bar_publisher")
         diagnostic_status.level = OK;
         diagnostic_status.name = "Barometer initialization";
         diagnostic_status.message = "Barometer initialized correctly";
-        diagnosticMessage.status.push_back(diagnostic_status);
+        diagnostic_message.status.push_back(diagnostic_status);
         RCLCPP_INFO(this->get_logger(), "Barometer initialized correctly");
     }
 }
