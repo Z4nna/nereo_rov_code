@@ -3,6 +3,8 @@ sudo apt-get upgrade -y
 
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+# current working directory
+cwd=$(pwd)
 
 echo "Installing Midnight Commander..."
 sudo apt-get install mc -y
@@ -46,7 +48,7 @@ echo "Installing dependencies..."
 sudo apt-get install ninja-build gettext cmake unzip curl build-essential
 
 git clone https://github.com/neovim/neovim ~/
-cd neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo
+cd ~/neovim && make CMAKE_BUILD_TYPE=RelWithDebInfo
 cd build && cpack -G DEB && sudo dpkg -i nvim-linux64.deb
 
 echo "Done."
@@ -74,7 +76,7 @@ echo "Done."
 echo "alias rg="ranger "" >> ~/.bashrc
 
 echo "Building Nereo ROS2 packages..."
-cd ../ros2_ws
+cd $(cwd)/../ros2_ws
 colcon build
 
 echo "All set up!"
