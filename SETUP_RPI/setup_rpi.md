@@ -13,13 +13,13 @@ sudo vim 50-cloud-init.yaml
 Then edit it until it looks like this:
 ```yaml
 network:
-	version: 2
-	renderer: networkd
-	ethernets:
-		eth0:
-			dhcp4: false
-			optional: true
-			addresses: [10.0.0.3/24]
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: false
+      optional: true
+      addresses: [10.0.0.3/24]
 ```
 Save and run ```sudo netplan try```. If it shows no errors, press Enter to accept the configurations. Now you can ssh into your system.
 # Connect to WiFi:
