@@ -6,9 +6,9 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include "imu_libs/WT61P.h"
-
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
@@ -18,17 +18,11 @@
 
 char *i2c_device = "/dev/i2c-1";
 
-typedef struct {
+struct Vec3 {
     float x;
     float y;
     float z;
-} Vec3;
-
-typedef struct {
-    Vec3 acc;
-    Vec3 angles;
-    Vec3 ang_vel;
-} ImuValues;
+};
 
 typedef double float64;
 

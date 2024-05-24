@@ -61,8 +61,11 @@ void calcCovMatrix(std::queue<Vec3> window, float64 *matrix) {
     matrix[5] = sum.z / MAXN; matrix[7] = sum.z / MAXN;
 }
 
+
 void PublisherIMU::timer_callback()
 {
+    tf2::Quaternion tf2_quat, tf2_quat_from_msg;
+
     auto imu_data_message = sensor_msgs::msg::Imu();
 
     imu_data_message.header.stamp = this->get_clock()->now();
@@ -78,13 +81,17 @@ void PublisherIMU::timer_callback()
     imu_data_message.linear_acceleration.y = WT61P_get_acc_y();
     imu_data_message.linear_acceleration.z = WT61P_get_acc_z();
 
-    /// fix this part: use tf2 to convert from euler angles to quaternion
     WT61P_read_angle();
     Vec3 angles = { WT61P_get_pitch(), WT61P_get_roll(), WT61P_get_yaw() };
-    
-    imu_data_message.orientation.x = angles.x;
-    imu_data_message.orientation.y = angles.y; 
-    imu_data_message.orientation.z = angles.z;
+
+    // tf2 quaternion conversion
+
+    tf2_quat.setRPY(angles.x * 0.0174533, angles.y * 0.0174533, angles.z * 0.0174533); // Conversion from degrees to radians
+
+    tf2_quat.normalize();
+
+    imu_data_message.orientation = tf2::toMsg(tf2_quat);
+
 
     /*
     // Linear acceleration covariance
