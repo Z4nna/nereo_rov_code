@@ -9,13 +9,15 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-void calcCovMatrix(std::queue<Vec3> window, float64 *matrix) {
+void GetCovarianceMatrix(std::queue<Vec3> window, CovarianceMatrix *matrix) {
 
     std::queue<Vec3> copy = window;
 
-    Vec3 mean;
+    Vec3 mean = {0, 0, 0};
     Vec3 sum = {0, 0, 0};
 
+
+    // CALCULATE SUM
     while(!copy.empty()){
         sum.x += copy.front().x;
         sum.y += copy.front().y;
@@ -24,16 +26,18 @@ void calcCovMatrix(std::queue<Vec3> window, float64 *matrix) {
         copy.pop();
     }
 
-    mean.x = sum.x / MAXN;
-    mean.y = sum.y / MAXN;
-    mean.z = sum.z / MAXN;
 
+    // CALCULATE MEAN
+    mean.x = sum.x / window.size();
+    mean.y = sum.y / window.size();
+    mean.z = sum.z / window.size();
+
+
+    // CALCULATE VARIANCES
     copy = window;
-
     sum = {0, 0, 0};
 
-    // VARIANCE
-    while (!copy.empty()){
+    while(!copy.empty()){
         sum.x += (copy.front().x - mean.x)*(copy.front().x - mean.x);
         sum.y += (copy.front().y - mean.y)*(copy.front().y - mean.y);
         sum.z += (copy.front().z - mean.z)*(copy.front().z - mean.z);
@@ -41,24 +45,29 @@ void calcCovMatrix(std::queue<Vec3> window, float64 *matrix) {
         copy.pop();
     }
 
-    matrix[0] = sum.x / MAXN;
-    matrix[4] = sum.y / MAXN;
-    matrix[8] = sum.z / MAXN;
 
-    
+    matrix->matrix[0] = sum.x / window.size();
+    matrix->matrix[4] = sum.y / window.size();
+    matrix->matrix[8] = sum.z / window.size();
+
+
+    // CALCULATE COVARIANCES
+    copy = window;
     sum = {0, 0, 0};
 
-    // COVARIANCE
     while(!copy.empty()){
-        sum.x += (copy.front().x - mean.x)*(copy.front().y - mean.y);
+        sum.x += (copy.front().y - mean.y)*(copy.front().z - mean.z);
         sum.y += (copy.front().x - mean.x)*(copy.front().z - mean.z);
-        sum.z += (copy.front().y - mean.y)*(copy.front().z - mean.z);
+        sum.z += (copy.front().x - mean.x)*(copy.front().y - mean.y);
 
+        copy.pop();
     }
 
-    matrix[1] = sum.x / MAXN; matrix[3] = sum.x / MAXN;
-    matrix[2] = sum.y / MAXN; matrix[6] = sum.y / MAXN;
-    matrix[5] = sum.z / MAXN; matrix[7] = sum.z / MAXN;
+
+    // FILL THE MATRIX
+    matrix->matrix[1] = sum.z / window.size(); matrix->matrix[3] = sum.z / window.size();
+    matrix->matrix[2] = sum.y / window.size(); matrix->matrix[6] = sum.y / window.size();
+    matrix->matrix[5] = sum.x / window.size(); matrix->matrix[7] = sum.x / window.size();
 }
 
 
@@ -71,6 +80,8 @@ void PublisherIMU::timer_callback()
     imu_data_message.header.stamp = this->get_clock()->now();
     imu_data_message.header.frame_id = "IMU Data";
     
+
+    // READ DATA FROM IMU
     WT61P_read_angular_vel();
     imu_data_message.angular_velocity.x = WT61P_get_angular_vel_x();
     imu_data_message.angular_velocity.y = WT61P_get_angular_vel_y();
@@ -84,34 +95,46 @@ void PublisherIMU::timer_callback()
     WT61P_read_angle();
     Vec3 angles = { WT61P_get_pitch(), WT61P_get_roll(), WT61P_get_yaw() };
 
-    // tf2 quaternion conversion
 
-    tf2_quat.setRPY(angles.x * 0.0174533, angles.y * 0.0174533, angles.z * 0.0174533); // Conversion from degrees to radians
-
+    // TF2 QUATERNION CONVERSION
+    tf2_quat.setRPY(angles.x * 0.0174533, angles.y * 0.0174533, angles.z * 0.0174533); // Converted to radians
     tf2_quat.normalize();
 
     imu_data_message.orientation = tf2::toMsg(tf2_quat);
 
 
+    // NOTE
     /*
-    // Linear acceleration covariance
-    calcCovMatrix(acceleration_window, matrix);
+        I don't know if this would work. Try it once you have the IMU connected.
+
+            imu_data_message.linear_acceleration_covariance = matrix;
+
+        For this reason matrix is defined as a float64 array.
+    */
+
+
+    // LINEAR ACCELERATION COVARIANCE
+    GetCovarianceMatrix(acceleration_window, &matrix);
 
     for (int i = 0; i < 9; i++)
-        imu_data_message.linear_acceleration_covariance[i] = matrix[i];
+        imu_data_message.linear_acceleration_covariance[i] = matrix.matrix[i];
 
-    // Angular velocity covariance
-    calcCovMatrix(angular_velocity_window, matrix);
+
+    // ANGULAR VELOCITY COVARIANCE
+    GetCovarianceMatrix(angular_velocity_window, &matrix);
 
     for (int i = 0; i < 9; i++)
-        imu_data_message.angular_velocity_covariance[i] = matrix[i];
+        imu_data_message.angular_velocity_covariance[i] = matrix.matrix[i];
 
-    // Orientation covariance - SBAGLIATA - CONVERSIONE IN QUATERNIONI E POI MATRICE
-    calcCovMatrix(angles_window, matrix);
-    
+
+    // ORIENTATION COVARIANCE
+    GetCovarianceMatrix(angles_window, &matrix);
+
     for (int i = 0; i < 9; i++)
-        imu_data_message.orientation_covariance[i] = matrix[i];
+        imu_data_message.orientation_covariance[i] = matrix.matrix[i];
 
+
+    /*
     // Diagnostic
     auto imu_diagnostic_message = diagnostic_msgs::msg::DiagnosticArray();
     

@@ -24,6 +24,10 @@ struct Vec3 {
     float z;
 };
 
+struct CovarianceMatrix{
+    float64 matrix[9];
+}
+
 typedef double float64;
 
 enum Status {OK, WARN, ERROR, STALE};
@@ -48,7 +52,8 @@ class PublisherIMU: public rclcpp::Node
         std::queue<Vec3> angular_velocity_window;
         std::queue<Vec3> angles_window;
 
-        float64 matrix[9];
+        // We will use a single covariance matrix for all the data and then copy it to the message
+        CovarianceMatrix matrix;
 
         void timer_callback();
 
