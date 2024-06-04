@@ -1,0 +1,5 @@
+uint8 mode
+---
+bool success
+uint8 mode_after_set
+string message
