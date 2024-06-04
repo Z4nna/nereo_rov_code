@@ -1,11 +1,4 @@
-src/.vscode
-src/nereo_interfaces/.vscode
-src/nereo_pkg/.vscode
 .vscode
-
-build
-install
-log
 
 unit_tests/imu_unit_test/.vscode
 unit_tests/imu_unit_test/CMakeFiles
@@ -24,3 +17,11 @@ unit_tests/barometer_unit_test/libbarometer_driver_basic.a
 unit_tests/barometer_unit_test/libbarometer_driver.a
 unit_tests/barometer_unit_test/libbarometer_interface.a
 unit_tests/barometer_unit_test/libiic.a
+
+control_station_ws/build
+control_station_ws/install
+control_station_ws/log
+
+raspberry_pi_ws/build
+raspberry_pi_ws/install
+raspberry_pi_ws/log
